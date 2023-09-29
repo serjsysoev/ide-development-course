@@ -43,47 +43,20 @@ const val TOP_MARGIN = 0.5f
 @Composable
 fun BoxScope.EditorView(model: Editor, settings: Settings) = key(model) {
     val textMeasurer = rememberTextMeasurer()
-    var renderedText by remember { mutableStateOf<RenderedText?>(null) }
+    val renderedText = remember { mutableStateOf<RenderedText?>(null) }
 
-    var verticalScrollOffset by remember { mutableStateOf(0f) }
-    var horizontalScrollOffset by remember { mutableStateOf(0f) }
+    val verticalScrollOffset = remember { mutableStateOf(0f) }
+    val horizontalScrollOffset = remember { mutableStateOf(0f) }
 
     val textSize = textMeasurer.measure("t", style = getTextStyle(settings)).size
     var canvasSize by remember { mutableStateOf(IntSize.Zero) }
     val rope = model.rope
 
-    val verticalScrollState = rememberScrollableState { delta ->
-        val newScrollOffset = coerceVerticalOffset(verticalScrollOffset - delta, rope.lineCount, textSize, canvasSize)
-        val scrollConsumed = verticalScrollOffset - newScrollOffset
-        verticalScrollOffset = newScrollOffset
-        scrollConsumed
-    }
-    val horizontalScrollState = rememberScrollableState { delta ->
-        val newScrollOffset =
-            coerceHorizontalOffset(horizontalScrollOffset - delta, rope.maxLineLength, textSize, canvasSize)
-        val scrollConsumed = horizontalScrollOffset - newScrollOffset
-        horizontalScrollOffset = newScrollOffset
-        scrollConsumed
-    }
-    LaunchedEffect(verticalScrollOffset) {
-        withContext(Dispatchers.Default) {
-            val currentRenderedText = renderedText
-            val verticalOffset = verticalScrollOffset
-
-            if (currentRenderedText == null
-                || currentRenderedText.textSize != settings.fontSize
-                || (currentRenderedText.from > 0 && verticalOffset - currentRenderedText.from * textSize.height < canvasSize.height / 2)
-                || (currentRenderedText.to < rope.lineCount && currentRenderedText.to * textSize.height - verticalOffset - canvasSize.height < canvasSize.height / 2)
-            ) {
-                val from = floor((verticalOffset - canvasSize.height) / textSize.height).toInt().coerceAtLeast(0)
-                val to = ceil((verticalOffset + 2 * canvasSize.height) / textSize.height).toInt()
-                    .coerceAtMost(rope.lineCount)
-                // in case text size has changed we want to maintain correct verticalScrollOffset
-                verticalScrollOffset = coerceVerticalOffset(verticalOffset, rope.lineCount, textSize, canvasSize)
-                println("Relayout from $from to $to")
-                renderedText = textMeasurer.layoutLines(rope, from, to, settings)
-            }
-        }
+    val verticalScrollState = initVerticalScrollState(verticalScrollOffset, rope.lineCount, textSize, canvasSize)
+    val horizontalScrollState =
+        initHorizontalScrollState(horizontalScrollOffset, rope.maxLineLength, textSize, canvasSize)
+    LaunchedEffect(verticalScrollOffset.value to settings.fontSize) {
+        renderedText.update(verticalScrollOffset, settings, textSize, canvasSize, rope, textMeasurer)
     }
     Canvas(Modifier
         .fillMaxSize()
@@ -92,15 +65,15 @@ fun BoxScope.EditorView(model: Editor, settings: Settings) = key(model) {
         .scrollable(verticalScrollState, Orientation.Vertical)
         .scrollable(horizontalScrollState, Orientation.Horizontal)
     ) {
-        val verticalOffset = verticalScrollOffset
+        val verticalOffset = verticalScrollOffset.value
 
         drawRect(AppTheme.colors.material.background, size = this.size)
 
-        renderedText?.let {
+        renderedText.value?.let {
             drawText(
                 it.textLayoutResult,
                 topLeft = Offset(
-                    -horizontalScrollOffset + (GUTTER_TEXT_OFFSET + 4) * textSize.width,
+                    -horizontalScrollOffset.value + (GUTTER_TEXT_OFFSET + 4) * textSize.width,
                     -verticalOffset + (it.from + TOP_MARGIN) * textSize.height
                 )
             )
@@ -109,50 +82,126 @@ fun BoxScope.EditorView(model: Editor, settings: Settings) = key(model) {
         drawGutter(settings, textSize, verticalOffset, textMeasurer, rope.lineCount)
     }
 
-    VerticalScrollbar(
-        object : ScrollbarAdapter {
-            override val contentSize: Double
-                get() = getMaxVerticalScroll(
-                    rope.lineCount,
-                    textSize.height,
-                    canvasSize.height
-                ).toDouble() + viewportSize
-            override val scrollOffset: Double
-                get() = verticalScrollOffset.toDouble()
-            override val viewportSize: Double
-                get() = canvasSize.height.toDouble()
+    VerticalScrollbar(rope.lineCount, textSize, canvasSize, verticalScrollOffset)
+    HorizontalScrollbar(rope.maxLineLength, textSize, canvasSize, horizontalScrollOffset)
+}
 
-            override suspend fun scrollTo(scrollOffset: Double) {
-                verticalScrollOffset =
-                    coerceVerticalOffset(scrollOffset.toFloat(), rope.lineCount, textSize, canvasSize)
-            }
-
-        },
-        Modifier.align(Alignment.CenterEnd)
-    )
-
+@Composable
+private fun BoxScope.HorizontalScrollbar(
+    maxLineLength: Int,
+    textSize: IntSize,
+    canvasSize: IntSize,
+    horizontalScrollOffset: MutableState<Float>
+) {
     HorizontalScrollbar(
         object : ScrollbarAdapter {
             override val contentSize: Double
                 get() = getMaxHorizontalScroll(
-                    rope.maxLineLength,
+                    maxLineLength,
                     textSize.width,
                     canvasSize.width
                 ) + viewportSize
             override val scrollOffset: Double
-                get() = horizontalScrollOffset.toDouble()
+                get() = horizontalScrollOffset.value.toDouble()
             override val viewportSize: Double
                 get() = (canvasSize.width - GUTTER_SIZE * textSize.width).toDouble()
 
             override suspend fun scrollTo(scrollOffset: Double) {
-                horizontalScrollOffset =
-                    coerceHorizontalOffset(scrollOffset.toFloat(), rope.maxLineLength, textSize, canvasSize)
+                horizontalScrollOffset.value =
+                    coerceHorizontalOffset(scrollOffset.toFloat(), maxLineLength, textSize, canvasSize)
             }
 
         },
         // idk why / 2, it just doesn't work without it
         Modifier.align(Alignment.BottomCenter).absolutePadding(left = (GUTTER_SIZE * textSize.width / 2).dp)
     )
+}
+
+@Composable
+private fun BoxScope.VerticalScrollbar(
+    lineCount: Int,
+    textSize: IntSize,
+    canvasSize: IntSize,
+    verticalScrollOffset: MutableState<Float>
+) {
+    VerticalScrollbar(
+        object : ScrollbarAdapter {
+            override val contentSize: Double
+                get() = getMaxVerticalScroll(
+                    lineCount,
+                    textSize.height,
+                    canvasSize.height
+                ).toDouble() + viewportSize
+            override val scrollOffset: Double
+                get() = verticalScrollOffset.value.toDouble()
+            override val viewportSize: Double
+                get() = canvasSize.height.toDouble()
+
+            override suspend fun scrollTo(scrollOffset: Double) {
+                verticalScrollOffset.value =
+                    coerceVerticalOffset(scrollOffset.toFloat(), lineCount, textSize, canvasSize)
+            }
+
+        },
+        Modifier.align(Alignment.CenterEnd)
+    )
+}
+
+@Composable
+private fun initHorizontalScrollState(
+    horizontalScrollOffset: MutableState<Float>,
+    maxLineLength: Int,
+    textSize: IntSize,
+    canvasSize: IntSize
+) = rememberScrollableState { delta ->
+    val newScrollOffset =
+        coerceHorizontalOffset(horizontalScrollOffset.value - delta, maxLineLength, textSize, canvasSize)
+    val scrollConsumed = horizontalScrollOffset.value - newScrollOffset
+    horizontalScrollOffset.value = newScrollOffset
+    scrollConsumed
+}
+
+@Composable
+private fun initVerticalScrollState(
+    verticalScrollOffset: MutableState<Float>,
+    lineCount: Int,
+    textSize: IntSize,
+    canvasSize: IntSize
+) = rememberScrollableState { delta ->
+    val newScrollOffset = coerceVerticalOffset(verticalScrollOffset.value - delta, lineCount, textSize, canvasSize)
+    val scrollConsumed = verticalScrollOffset.value - newScrollOffset
+    verticalScrollOffset.value = newScrollOffset
+    scrollConsumed
+}
+
+private suspend fun MutableState<RenderedText?>.update(
+    verticalScrollOffset: MutableState<Float>,
+    settings: Settings,
+    textSize: IntSize,
+    canvasSize: IntSize,
+    rope: Rope<LineMetrics>,
+    textMeasurer: TextMeasurer
+): Unit = withContext(Dispatchers.Default) {
+    val renderedText = value
+    val verticalOffset = verticalScrollOffset.value
+
+    if (renderedText == null
+        || renderedText.textSize != settings.fontSize
+        || (renderedText.from > 0
+                && verticalOffset - renderedText.from * textSize.height < canvasSize.height / 2)
+        || (renderedText.to < rope.lineCount
+                && renderedText.to * textSize.height - verticalOffset - canvasSize.height < canvasSize.height / 2)
+    ) {
+        val from = floor((verticalOffset - canvasSize.height) / textSize.height).toInt()
+            .coerceAtLeast(0)
+        val to = ceil((verticalOffset + 2 * canvasSize.height) / textSize.height).toInt()
+            .coerceAtMost(rope.lineCount)
+        println("Relayout from $from to $to")
+        value = textMeasurer.layoutLines(rope, from, to, settings)
+        // in case text size has changed we want to maintain correct verticalScrollOffset
+        verticalScrollOffset.value =
+            coerceVerticalOffset(verticalScrollOffset.value, rope.lineCount, textSize, canvasSize)
+    }
 }
 
 private fun coerceVerticalOffset(
