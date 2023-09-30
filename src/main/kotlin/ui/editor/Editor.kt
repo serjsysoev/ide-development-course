@@ -1,7 +1,7 @@
 package ui.editor
 
 import util.File
-import util.LineMetrics
+import util.rope.LineMetrics
 import util.rope.Rope
 
 class Editor(

@@ -1,5 +1,7 @@
 package util
 
+import util.rope.LineMetrics
+import util.rope.LineMetricsCalculator
 import util.rope.Rope
 import java.io.RandomAccessFile
 import java.nio.channels.FileChannel
