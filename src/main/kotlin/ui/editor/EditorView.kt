@@ -32,6 +32,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.jetbrains.skia.Font
 import ui.common.AppTheme
+import ui.common.FontSettings
 import ui.common.Settings
 import util.rope.*
 import java.util.logging.Logger
@@ -43,17 +44,16 @@ const val EDITOR_TEXT_OFFSET = GUTTER_SIZE + 2
 const val TOP_MARGIN = 0.5f
 
 object EditorView {
-    val log = Logger.getLogger(EditorView::class.java.name)
+    val log: Logger = Logger.getLogger(EditorView::class.java.name)
 }
 
 internal data class EditorState(
     val verticalScrollOffset: MutableState<Float>,
     val horizontalScrollOffset: MutableState<Float>,
     val canvasSize: MutableState<IntSize>,
-    val renderedText: MutableState<RenderedText?>,
     val cursorPosition: MutableState<CursorPosition>,
     val isCursorVisible: MutableState<Pair<Boolean, Int>>,
-    val rope: Rope<LineMetrics>,
+    val rope: MutableState<Rope<LineMetrics>>, // TODO: undo
     val textSize: Size,
 )
 
@@ -66,18 +66,29 @@ fun BoxScope.EditorView(model: Editor, settings: Settings) = key(model) {
         verticalScrollOffset = remember { mutableStateOf(0f) },
         horizontalScrollOffset = remember { mutableStateOf(0f) },
         canvasSize = remember { mutableStateOf(IntSize.Zero) },
-        renderedText = remember { mutableStateOf(null) },
         cursorPosition = remember { mutableStateOf(CursorPosition(CodePosition(0, 0), 0)) },
         isCursorVisible = remember { mutableStateOf(true to 0) },
-        rope = model.rope,
-        textSize = remember(settings) { getTextSize(fontFamilyResolver, textMeasurer, settings) }
+        rope = remember { mutableStateOf(model.rope) },
+        textSize = remember(settings.fontSettings) {
+            getTextSize(fontFamilyResolver, textMeasurer, settings.fontSettings)
+        }
     )
+
 
     val verticalScrollState = editorState.initVerticalScrollState()
     val horizontalScrollState = editorState.initHorizontalScrollState()
 
-    LaunchedEffect(editorState.verticalScrollOffset.value to settings.fontSize) {
-        editorState.rerenderText(settings, textMeasurer)
+    val renderedText = remember { mutableStateOf<RenderedText?>(null) }
+    val previousRope = remember { mutableStateOf<Rope<LineMetrics>?>(null) }
+    LaunchedEffect(
+        editorState.verticalScrollOffset.value,
+        editorState.canvasSize.value,
+        editorState.rope.value,
+        editorState.textSize,
+        settings.fontSettings
+    ) {
+        println("recompose")
+        editorState.rerenderText(renderedText, settings.fontSettings, textMeasurer, previousRope)
     }
 
     LaunchedEffect(editorState.isCursorVisible.value) { // TODO: documentation explicitly tells not to do that
@@ -106,7 +117,7 @@ fun BoxScope.EditorView(model: Editor, settings: Settings) = key(model) {
 
         drawRect(AppTheme.colors.material.background, size = this.size)
 
-        editorState.renderedText.value?.let {
+        renderedText.value?.let {
             drawText(
                 it.textLayoutResult,
                 topLeft = editorState.codeToViewport(CodePosition(0, it.from))
@@ -122,7 +133,7 @@ fun BoxScope.EditorView(model: Editor, settings: Settings) = key(model) {
             )
         }
 
-        drawGutter(settings, textSize, verticalOffset, textMeasurer, editorState.rope.lineCount)
+        drawGutter(settings.fontSettings, textSize, verticalOffset, textMeasurer, editorState.rope.value.lineCount)
     }
 
     LaunchedEffect(Unit) {
@@ -143,7 +154,11 @@ fun BoxScope.EditorView(model: Editor, settings: Settings) = key(model) {
  * That is why this atrocious piece of code calculates width using skia and height using compose.
  * This will only be recalculated on font size change, so it should not impact performance.
  */
-private fun getTextSize(fontFamilyResolver: FontFamily.Resolver, textMeasurer: TextMeasurer, settings: Settings): Size {
+private fun getTextSize(
+    fontFamilyResolver: FontFamily.Resolver,
+    textMeasurer: TextMeasurer,
+    settings: FontSettings
+): Size {
     val fontLoadResult = fontFamilyResolver.resolve(settings.fontFamily).value as FontLoadResult
     val typeface = fontLoadResult.typeface
     val width = Font(typeface, settings.fontSize.value).measureTextWidth("x") * 2
@@ -163,6 +178,19 @@ internal fun EditorState.viewportToCode(offset: Offset): CodePosition = CodePosi
 
 internal data class CodePosition(val x: Int, val y: Int)
 internal data class CursorPosition(val codePosition: CodePosition, val wantedX: Int)
+
+internal fun Rope<LineMetrics>.indexOf(codePosition: CodePosition): Int =
+    getIndexOfKthLine(codePosition.y) + codePosition.x
+
+internal fun Rope<LineMetrics>.codePositionOf(index: Int, coerce: Boolean = false): CodePosition {
+    require(coerce || index in 0..length) { "Index out of bounds!" }
+    val coercedIndex = index.coerceIn(0..length)
+
+    val slice = slice(0, coercedIndex)
+    val y = slice.lineCount - 1
+    val x = coercedIndex - getIndexOfKthLine(y)
+    return CodePosition(x, y)
+}
 
 @Composable
 private fun BoxScope.HorizontalScrollbar(editorState: EditorState) {
@@ -224,26 +252,29 @@ private fun EditorState.initVerticalScrollState() = rememberScrollableState { de
 }
 
 private suspend fun EditorState.rerenderText(
-    settings: Settings,
-    textMeasurer: TextMeasurer
+    renderedText: MutableState<RenderedText?>,
+    settings: FontSettings,
+    textMeasurer: TextMeasurer,
+    previousRope: MutableState<Rope<LineMetrics>?>
 ): Unit = withContext(Dispatchers.Default) {
     val text = renderedText.value
     val verticalOffset = verticalScrollOffset.value
     val canvasSize = canvasSize.value
 
-    if (text == null
+    if (text == null || previousRope.value != rope.value
         || text.textSize != settings.fontSize
         || (text.from > 0
                 && verticalOffset - text.from * textSize.height < canvasSize.height / 2)
-        || (text.to < rope.lineCount
+        || (text.to < rope.value.lineCount
                 && text.to * textSize.height - verticalOffset - canvasSize.height < canvasSize.height / 2)
     ) {
+        previousRope.value = rope.value
         val from = floor((verticalOffset - canvasSize.height) / textSize.height).toInt()
             .coerceAtLeast(0)
         val to = ceil((verticalOffset + 2 * canvasSize.height) / textSize.height).toInt()
-            .coerceAtMost(rope.lineCount)
+            .coerceAtMost(rope.value.lineCount)
         EditorView.log.info("Relayout from $from to $to")
-        renderedText.value = textMeasurer.layoutLines(rope, from, to, settings)
+        renderedText.value = textMeasurer.layoutLines(rope.value, from, to, settings)
         // in case text size has changed we want to maintain correct verticalScrollOffset
         verticalScrollOffset.value = coerceVerticalOffset(verticalScrollOffset.value)
     }
@@ -258,13 +289,13 @@ private fun EditorState.coerceHorizontalOffset(offset: Float) = offset
     .coerceAtMost(getMaxHorizontalScroll())
 
 private fun EditorState.getMaxVerticalScroll() =
-    ((rope.lineCount + 5) * textSize.height - canvasSize.value.height).coerceAtLeast(0f)
+    ((rope.value.lineCount + 5) * textSize.height - canvasSize.value.height).coerceAtLeast(0f)
 
 private fun EditorState.getMaxHorizontalScroll() =
-    ((rope.maxLineLength + GUTTER_SIZE) * textSize.width - canvasSize.value.width).coerceAtLeast(0f)
+    ((rope.value.maxLineLength + GUTTER_SIZE) * textSize.width - canvasSize.value.width).coerceAtLeast(0f)
 
 private fun DrawScope.drawGutter(
-    settings: Settings,
+    settings: FontSettings,
     textSize: Size,
     verticalScrollOffset: Float,
     textMeasurer: TextMeasurer,
@@ -307,7 +338,7 @@ private fun TextMeasurer.layoutLines(
     rope: Rope<LineMetrics>,
     from: Int,
     to: Int,
-    settings: Settings
+    settings: FontSettings
 ): RenderedText {
     val builder = AnnotatedString.Builder()
     val text = rope.getLines(from, to)
@@ -322,5 +353,5 @@ private fun TextMeasurer.layoutLines(
     return RenderedText(textLayoutResult, from, to, settings.fontSize)
 }
 
-private fun getTextStyle(settings: Settings) =
+private fun getTextStyle(settings: FontSettings) =
     TextStyle(fontFamily = settings.fontFamily, fontSize = settings.fontSize)

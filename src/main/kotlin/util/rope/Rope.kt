@@ -16,7 +16,7 @@ class Rope<Metrics> {
         }
     }
 
-    val length: Int
+    val length: Int // TODO: migrate to long
             get() = base.length
 
     operator fun get(index: Int): Char = base[index]
@@ -29,14 +29,14 @@ class Rope<Metrics> {
         return base.joinToString().toString()
     }
 
-    fun insert(idx: Int, sequence: CharSequence): Rope<Metrics> {
-        if (idx == 0) {
+    fun insert(index: Int, sequence: CharSequence): Rope<Metrics> {
+        if (index == 0) {
             return prepend(sequence)
         }
-        if (idx == length) {
+        if (index == length) {
             return append(sequence)
         }
-        val (left, right) = base.split(idx)
+        val (left, right) = base.split(index)
         return Rope(
             concat(
                 concat(left, LeafNode(sequence, base.metricsCalculator)),
@@ -44,6 +44,8 @@ class Rope<Metrics> {
             )
         )
     }
+
+    fun insert(index: Int, char: Char): Rope<Metrics> = insert(index, char.toString())
 
     fun prepend(sequence: CharSequence): Rope<Metrics> {
         val newNode = concat(LeafNode(sequence, base.metricsCalculator), base)
@@ -55,7 +57,7 @@ class Rope<Metrics> {
         return Rope(newNode)
     }
 
-    fun delete(start: Int, end: Int): Rope<Metrics> {
-        return Rope(base.delete(start, end - start))
+    fun delete(startIndex: Int, endIndex: Int): Rope<Metrics> {
+        return Rope(base.delete(startIndex, endIndex))
     }
 }

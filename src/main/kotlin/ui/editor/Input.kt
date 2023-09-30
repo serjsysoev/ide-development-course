@@ -4,9 +4,11 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.awt.awtEventOrNull
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.pointerInput
+import java.awt.event.KeyEvent as AwtKeyEvent
 import util.rope.lineCount
 import util.rope.lineLength
 import kotlin.math.min
@@ -39,47 +41,82 @@ internal fun Modifier.pointerInput(editorState: EditorState): Modifier {
 
 private fun EditorState.setCursorByCodePosition(offset: Offset): CursorPosition {
     val (x, y) = viewportToCode(offset)
-    val newY = min(y, rope.lineCount - 1)
-    val lineLength = rope.lineLength(newY)
+    val newY = min(y, rope.value.lineCount - 1)
+    val lineLength = rope.value.lineLength(newY)
     val newX = min(x, lineLength)
     return CursorPosition(CodePosition(newX, newY), newX)
 }
 
 internal fun Modifier.keyboardInput(editorState: EditorState): Modifier =
     onKeyEvent { keyEvent ->
-        val cursorPosition = editorState.cursorPosition
-        if (keyEvent.hasModifiers || keyEvent.type == KeyEventType.KeyUp) return@onKeyEvent false
+        val cursorPosition = editorState.cursorPosition.value
+        val rope = editorState.rope.value
+
+        keyEvent.awtEventOrNull?.let { awtEvent ->
+            if (awtEvent.id == AwtKeyEvent.KEY_TYPED) {
+                println("`${awtEvent.keyChar}` ${awtEvent.keyChar.code}")
+                val ropeIndex = rope.indexOf(cursorPosition.codePosition)
+                val (newRope, newCursorPosition) = when (awtEvent.keyChar.code) {
+                    AwtKeyEvent.VK_ENTER -> {
+                        val newRope = rope.insert(ropeIndex, awtEvent.keyChar)
+                        val newCodePosition = cursorPosition.codePosition.let { it.copy(x = 0, y = it.y + 1) }
+                        newRope to CursorPosition(newCodePosition, newCodePosition.x)
+                    }
+
+                    AwtKeyEvent.VK_BACK_SPACE -> {
+                        if (ropeIndex != 0) {
+                            val newCodePosition = rope.codePositionOf(ropeIndex - 1)
+                            val newRope = rope.delete(ropeIndex - 1, ropeIndex)
+                            newRope to CursorPosition(newCodePosition, newCodePosition.x)
+                        } else {
+                            rope to cursorPosition.copy(wantedX = 0) // TODO: do we want this in history?
+                        }
+                    }
+
+                    AwtKeyEvent.VK_DELETE -> {
+                        if (ropeIndex != rope.length) {
+                            rope.delete(ropeIndex, ropeIndex + 1)
+                        } else {
+                            rope
+                        } to cursorPosition.copy(wantedX = cursorPosition.codePosition.x)
+                    }
+
+                    else -> {
+                        val newRope = rope.insert(
+                            editorState.rope.value.indexOf(cursorPosition.codePosition),
+                            awtEvent.keyChar
+                        )
+                        val newCodePosition = cursorPosition.codePosition.let { it.copy(x = it.x + 1) }
+                        newRope to CursorPosition(newCodePosition, newCodePosition.x)
+                    }
+                }
+                editorState.rope.value = newRope
+                editorState.cursorPosition.value = newCursorPosition
+            }
+        }
+
+        if (keyEvent.type != KeyEventType.KeyDown || keyEvent.hasModifiers) return@onKeyEvent false
         when (keyEvent.key) {
             Key.DirectionRight -> {
-                cursorPosition.value = cursorPosition.value.let { (codePosition, _) ->
-                    val lineLength = editorState.rope.lineLength(codePosition.y)
-                    if (codePosition.x + 1 <= lineLength) {
-                        CursorPosition(codePosition.copy(x = codePosition.x + 1), codePosition.x + 1)
-                    } else if (codePosition.y + 1 < editorState.rope.lineCount) {
-                        CursorPosition(CodePosition(0, codePosition.y + 1), 0)
-                    } else {
-                        CursorPosition(codePosition, codePosition.x)
-                    }
+                editorState.cursorPosition.value = cursorPosition.let { (codePosition, _) ->
+                    val newIndex = rope.indexOf(codePosition) + 1
+                    val newCodePosition = rope.codePositionOf(newIndex, coerce = true)
+                    CursorPosition(newCodePosition, newCodePosition.x)
                 }
             }
 
             Key.DirectionLeft -> {
-                cursorPosition.value = cursorPosition.value.let { (codePosition, _) ->
-                    if (codePosition.x - 1 >= 0) {
-                        CursorPosition(codePosition.copy(x = codePosition.x - 1), codePosition.x - 1)
-                    } else if (codePosition.y - 1 >= 0) {
-                        val lineLength = editorState.rope.lineLength(codePosition.y - 1)
-                        CursorPosition(CodePosition(lineLength, codePosition.y - 1), lineLength)
-                    } else {
-                        CursorPosition(codePosition, codePosition.x)
-                    }
+                editorState.cursorPosition.value = cursorPosition.let { (codePosition, _) ->
+                    val newIndex = rope.indexOf(codePosition) - 1
+                    val newCodePosition = rope.codePositionOf(newIndex, coerce = true)
+                    CursorPosition(newCodePosition, newCodePosition.x)
                 }
             }
 
             Key.DirectionUp -> {
-                cursorPosition.value = cursorPosition.value.let { (codePosition, wantedX) ->
+                editorState.cursorPosition.value = cursorPosition.let { (codePosition, wantedX) ->
                     if (codePosition.y - 1 >= 0) {
-                        val lineLength = editorState.rope.lineLength(codePosition.y - 1)
+                        val lineLength = rope.lineLength(codePosition.y - 1)
                         val newCodePosition = CodePosition(min(wantedX, lineLength), codePosition.y - 1)
                         CursorPosition(newCodePosition, wantedX)
                     } else {
@@ -89,13 +126,13 @@ internal fun Modifier.keyboardInput(editorState: EditorState): Modifier =
             }
 
             Key.DirectionDown -> {
-                cursorPosition.value = cursorPosition.value.let { (codePosition, wantedX) ->
-                    if (codePosition.y + 1 < editorState.rope.lineCount) {
-                        val lineLength = editorState.rope.lineLength(codePosition.y + 1)
+                editorState.cursorPosition.value = cursorPosition.let { (codePosition, wantedX) ->
+                    if (codePosition.y + 1 < rope.lineCount) {
+                        val lineLength = rope.lineLength(codePosition.y + 1)
                         val newCodePosition = CodePosition(min(wantedX, lineLength), codePosition.y + 1)
                         CursorPosition(newCodePosition, wantedX)
                     } else {
-                        val lineLength = editorState.rope.lineLength(codePosition.y)
+                        val lineLength = rope.lineLength(codePosition.y)
                         CursorPosition(CodePosition(lineLength, codePosition.y), lineLength)
                     }
                 }
