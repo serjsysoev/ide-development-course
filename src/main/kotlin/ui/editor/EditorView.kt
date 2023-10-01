@@ -90,7 +90,6 @@ fun BoxScope.EditorView(model: Editor, settings: Settings) = key(model) {
         editorState.textSize,
         settings.fontSettings
     ) {
-        println("recompose")
         editorState.rerenderText(renderedText, settings.fontSettings, textMeasurer, previousRope)
     }
 

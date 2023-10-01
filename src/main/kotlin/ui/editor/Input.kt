@@ -111,40 +111,38 @@ internal fun Modifier.keyboardInput(editorState: EditorState, clipboardManager: 
         val rope = editorState.rope.value
         val cursorPosition = editorState.cursorPosition.value
 
-        when (keyEvent.key) { // TODO: if selection is cleared, caret movement is handled differently
+        when (keyEvent.key) {
             Key.DirectionRight -> {
                 if (keyEvent.isCtrlPressed || keyEvent.isAltPressed || keyEvent.isMetaPressed) return@onKeyEvent false
 
-                if (keyEvent.isShiftPressed) editorState.startOrContinueSelection()
-                else editorState.clearSelection()
-
-                editorState.cursorPosition.value = cursorPosition.let { (codePosition, _) ->
-                    val newIndex = rope.indexOf(codePosition) + 1
-                    val newCodePosition = rope.codePositionOf(newIndex, coerce = true)
-                    CursorPosition(newCodePosition, newCodePosition.x)
-                }
+                val clearedSelectionCursors = handleSelectionOnArrows(keyEvent, editorState)
+                editorState.cursorPosition.value = if (clearedSelectionCursors != null) {
+                    clearedSelectionCursors.second
+                } else {
+                    val newIndex = rope.indexOf(cursorPosition.codePosition) + 1
+                    rope.codePositionOf(newIndex, coerce = true)
+                }.let { CursorPosition(it, it.x) }
             }
 
             Key.DirectionLeft -> {
                 if (keyEvent.isCtrlPressed || keyEvent.isAltPressed || keyEvent.isMetaPressed) return@onKeyEvent false
 
-                if (keyEvent.isShiftPressed) editorState.startOrContinueSelection()
-                else editorState.clearSelection()
-
-                editorState.cursorPosition.value = cursorPosition.let { (codePosition, _) ->
-                    val newIndex = rope.indexOf(codePosition) - 1
-                    val newCodePosition = rope.codePositionOf(newIndex, coerce = true)
-                    CursorPosition(newCodePosition, newCodePosition.x)
-                }
+                val clearedSelectionCursors = handleSelectionOnArrows(keyEvent, editorState)
+                editorState.cursorPosition.value = if (clearedSelectionCursors != null) {
+                    clearedSelectionCursors.first
+                } else {
+                    val newIndex = rope.indexOf(cursorPosition.codePosition) - 1
+                    rope.codePositionOf(newIndex, coerce = true)
+                }.let { CursorPosition(it, it.x) }
             }
 
             Key.DirectionUp -> {
                 if (keyEvent.isCtrlPressed || keyEvent.isAltPressed || keyEvent.isMetaPressed) return@onKeyEvent false
 
-                if (keyEvent.isShiftPressed) editorState.startOrContinueSelection()
-                else editorState.clearSelection()
+                val clearedSelectionCursors = handleSelectionOnArrows(keyEvent, editorState)
+                val relevantCursor = clearedSelectionCursors?.first?.let { CursorPosition(it, it.x) } ?: cursorPosition
 
-                editorState.cursorPosition.value = cursorPosition.let { (codePosition, wantedX) ->
+                editorState.cursorPosition.value = relevantCursor.let { (codePosition, wantedX) ->
                     if (codePosition.y - 1 >= 0) {
                         val lineLength = rope.lineLength(codePosition.y - 1)
                         val newCodePosition = CodePosition(min(wantedX, lineLength), codePosition.y - 1)
@@ -158,10 +156,10 @@ internal fun Modifier.keyboardInput(editorState: EditorState, clipboardManager: 
             Key.DirectionDown -> {
                 if (keyEvent.isCtrlPressed || keyEvent.isAltPressed || keyEvent.isMetaPressed) return@onKeyEvent false
 
-                if (keyEvent.isShiftPressed) editorState.startOrContinueSelection()
-                else editorState.clearSelection()
+                val clearedSelectionCursors = handleSelectionOnArrows(keyEvent, editorState)
+                val relevantCursor = clearedSelectionCursors?.second?.let { CursorPosition(it, it.x) } ?: cursorPosition
 
-                editorState.cursorPosition.value = cursorPosition.let { (codePosition, wantedX) ->
+                editorState.cursorPosition.value = relevantCursor.let { (codePosition, wantedX) ->
                     if (codePosition.y + 1 < rope.lineCount) {
                         val lineLength = rope.lineLength(codePosition.y + 1)
                         val newCodePosition = CodePosition(min(wantedX, lineLength), codePosition.y + 1)
@@ -206,6 +204,18 @@ internal fun Modifier.keyboardInput(editorState: EditorState, clipboardManager: 
         editorState.resetCursorBlinking()
         return@onKeyEvent true
     }
+
+private fun handleSelectionOnArrows(
+    keyEvent: KeyEvent,
+    editorState: EditorState,
+): Pair<CodePosition, CodePosition>? = if (keyEvent.isShiftPressed) {
+    editorState.startOrContinueSelection()
+    null
+} else {
+    val position = editorState.getSelection()
+    editorState.clearSelection()
+    position
+}
 
 private fun EditorState.resetCursorBlinking() {
     isCursorVisible.value = true to isCursorVisible.value.second + 1

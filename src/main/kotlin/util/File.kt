@@ -40,9 +40,11 @@ fun java.io.File.toProjectFile(): File = object : File {
             val charArray = CharArray(Rope.SPLIT_LENGTH)
             val reader = this@toProjectFile.bufferedReader()
 
-            while (reader.read(charArray).coerceAtLeast(0) != 0) {
+            var read: Int
+            while (reader.read(charArray).also { read = it } == Rope.SPLIT_LENGTH) {
                 add(String(charArray))
             }
+            add(String(charArray.sliceArray(0 until read)))
         }
         return Rope(stringList, LineMetricsCalculator())
     }
