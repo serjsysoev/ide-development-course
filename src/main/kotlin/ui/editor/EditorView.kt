@@ -20,6 +20,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalFontFamilyResolver
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontFamily
@@ -54,6 +55,7 @@ internal data class EditorState(
     val cursorPosition: MutableState<CursorPosition>,
     val isCursorVisible: MutableState<Pair<Boolean, Int>>,
     val rope: MutableState<Rope<LineMetrics>>, // TODO: undo
+    val selectionStart: MutableState<CodePosition?>,
     val textSize: Size,
 )
 
@@ -69,6 +71,7 @@ fun BoxScope.EditorView(model: Editor, settings: Settings) = key(model) {
         cursorPosition = remember { mutableStateOf(CursorPosition(CodePosition(0, 0), 0)) },
         isCursorVisible = remember { mutableStateOf(true to 0) },
         rope = remember { mutableStateOf(model.rope) },
+        selectionStart = remember { mutableStateOf(null) },
         textSize = remember(settings.fontSettings) {
             getTextSize(fontFamilyResolver, textMeasurer, settings.fontSettings)
         }
@@ -107,7 +110,7 @@ fun BoxScope.EditorView(model: Editor, settings: Settings) = key(model) {
         .focusRequester(requester)
         .focusable()
         .onSizeChanged { editorState.canvasSize.value = it }
-        .keyboardInput(editorState)
+        .keyboardInput(editorState, LocalClipboardManager.current)
         .pointerInput(editorState)
         .scrollable(verticalScrollState, Orientation.Vertical)
         .scrollable(horizontalScrollState, Orientation.Horizontal)
@@ -116,6 +119,8 @@ fun BoxScope.EditorView(model: Editor, settings: Settings) = key(model) {
         val textSize = editorState.textSize
 
         drawRect(AppTheme.colors.material.background, size = this.size)
+
+        drawSelection(editorState)
 
         renderedText.value?.let {
             drawText(
@@ -141,6 +146,54 @@ fun BoxScope.EditorView(model: Editor, settings: Settings) = key(model) {
     }
     VerticalScrollbar(editorState)
     HorizontalScrollbar(editorState)
+}
+
+private fun DrawScope.drawSelection(editorState: EditorState) {
+    val (startPosition, endPosition) = editorState.getSelection() ?: return
+    val textSize = editorState.textSize
+
+    if (startPosition.y == endPosition.y) {
+        drawRect(
+            topLeft = editorState.codeToViewport(startPosition),
+            size = Size((endPosition.x - startPosition.x) * textSize.width, textSize.height),
+            color = Color.Blue,
+            alpha = 0.3f
+        )
+    } else {
+        drawRect(
+            topLeft = editorState.codeToViewport(startPosition),
+            size = Size(size.width, textSize.height),
+            color = Color.Blue,
+            alpha = 0.3f
+        )
+        for (lineNumber in startPosition.y + 1 until endPosition.y) {
+            drawRect(
+                topLeft = editorState.codeToViewport(CodePosition(0, lineNumber)),
+                size = Size(size.width, textSize.height),
+                color = Color.Blue,
+                alpha = 0.3f
+            )
+
+        }
+        val (x, y) = editorState.codeToViewport(endPosition)
+        drawRect(
+            topLeft = Offset(0f, y),
+            size = Size(x, textSize.height),
+            color = Color.Blue,
+            alpha = 0.3f
+        )
+    }
+}
+
+internal fun EditorState.getSelection(): Pair<CodePosition, CodePosition>? {
+    val selectionStart = selectionStart.value
+    val cursorPosition = cursorPosition.value.codePosition
+
+    return if (selectionStart != null && selectionStart != cursorPosition) {
+        val startPosition = minOf(selectionStart, cursorPosition, compareBy({ it.y }, { it.x }))
+        val endPosition = if (startPosition != selectionStart) selectionStart else cursorPosition
+        startPosition to endPosition
+    } else null
 }
 
 /**
