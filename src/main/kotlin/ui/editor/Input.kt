@@ -195,7 +195,6 @@ internal fun Modifier.keyboardInput(editorState: EditorState, clipboardManager: 
                     || (keyEvent.isCtrlPressed && !keyEvent.isCtrlPressed && !keyEvent.isAltPressed && !keyEvent.isShiftPressed)
                 ) {
                     editorState.deleteSelection()
-                    editorState.clearSelection()
                     editorState.paste(clipboardManager)
                 }
             }
@@ -231,7 +230,7 @@ private fun EditorState.deleteSelection(): Boolean {
     val startIndex = currentRope.indexOf(startPosition)
     val endIndex = currentRope.indexOf(endPosition)
 
-    selectionStart.value = startPosition
+    selectionStart.value = null
     cursorPosition.value = CursorPosition(startPosition, startPosition.x)
     rope.value = currentRope.delete(startIndex, endIndex)
     return true
