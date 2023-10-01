@@ -181,11 +181,21 @@ internal fun Modifier.keyboardInput(editorState: EditorState, clipboardManager: 
                 }
             }
 
+            Key.X -> {
+                if ((keyEvent.isMetaPressed && !keyEvent.isCtrlPressed && !keyEvent.isAltPressed && !keyEvent.isShiftPressed)
+                    || (keyEvent.isCtrlPressed && !keyEvent.isCtrlPressed && !keyEvent.isAltPressed && !keyEvent.isShiftPressed)
+                ) {
+                    editorState.copySelection(clipboardManager)
+                    editorState.deleteSelection()
+                }
+            }
+
             Key.V -> {
                 if ((keyEvent.isMetaPressed && !keyEvent.isCtrlPressed && !keyEvent.isAltPressed && !keyEvent.isShiftPressed)
                     || (keyEvent.isCtrlPressed && !keyEvent.isCtrlPressed && !keyEvent.isAltPressed && !keyEvent.isShiftPressed)
                 ) {
                     editorState.deleteSelection()
+                    editorState.clearSelection()
                     editorState.paste(clipboardManager)
                 }
             }
