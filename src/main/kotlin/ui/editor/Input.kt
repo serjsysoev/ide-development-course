@@ -26,7 +26,7 @@ internal fun Modifier.pointerInput(editorState: EditorState): Modifier {
             cursorPosition.value = editorState.setCursorByCodePosition(offset)
             editorState.resetCursorBlinking()
         })
-    }.pointerInput(Unit) { // TODO: selection
+    }.pointerInput(Unit) {
         detectDragGestures(
             onDragStart = { offset ->
                 oldDragOffset = offset
