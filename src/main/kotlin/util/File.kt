@@ -3,9 +3,6 @@ package util
 import util.rope.LineMetrics
 import util.rope.LineMetricsCalculator
 import util.rope.Rope
-import java.io.RandomAccessFile
-import java.nio.channels.FileChannel
-import java.nio.charset.StandardCharsets
 
 val HomeFolder: File get() = java.io.File(System.getProperty("user.home")).toProjectFile()
 
@@ -39,14 +36,14 @@ fun java.io.File.toProjectFile(): File = object : File {
 
 
     override fun read(): Rope<LineMetrics> {
-        // TODO: optimize loading
-        var byteBufferSize: Long
-        val byteBuffer = RandomAccessFile(this@toProjectFile, "r").use { file ->
-            byteBufferSize = file.length()
-            file.channel.map(FileChannel.MapMode.READ_ONLY, 0, byteBufferSize)
-        }
+        val stringList = buildList {
+            val charArray = CharArray(Rope.SPLIT_LENGTH)
+            val reader = this@toProjectFile.bufferedReader()
 
-        val string = StandardCharsets.UTF_8.decode(byteBuffer).toString()
-        return Rope(string, LineMetricsCalculator())
+            while (reader.read(charArray).coerceAtLeast(0) != 0) {
+                add(String(charArray))
+            }
+        }
+        return Rope(stringList, LineMetricsCalculator())
     }
 }

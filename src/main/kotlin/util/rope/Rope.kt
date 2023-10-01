@@ -9,11 +9,18 @@ class Rope<Metrics> {
     }
 
     constructor(sequence: CharSequence, metricsCalculator: MetricsCalculator<Metrics>) {
-        base = if (sequence.length < splitLength) {
+        base = if (sequence.length < SPLIT_LENGTH) {
             LeafNode(sequence, metricsCalculator)
         } else {
-            sequence.chunked(splitLength).map { LeafNode(it, metricsCalculator) }.let { merge(it) }
+            sequence.chunked(SPLIT_LENGTH).map { LeafNode(it, metricsCalculator) }.let { merge(it) }
         }
+    }
+
+    /**
+     * This method should only be used with lines of size 200
+     */
+    constructor(lineFlow: List<String>, metricsCalculator: MetricsCalculator<Metrics>) {
+        base = lineFlow.map { LeafNode(it, metricsCalculator) }.let { merge(it) }
     }
 
     val length: Int // TODO: migrate to long
@@ -59,5 +66,9 @@ class Rope<Metrics> {
 
     fun delete(startIndex: Int, endIndex: Int): Rope<Metrics> {
         return Rope(base.delete(startIndex, endIndex))
+    }
+
+    companion object {
+        const val SPLIT_LENGTH = 200
     }
 }

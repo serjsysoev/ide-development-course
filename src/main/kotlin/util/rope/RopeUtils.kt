@@ -3,8 +3,6 @@ package util.rope
 import java.util.ArrayDeque
 import java.util.ArrayList
 
-internal const val splitLength = 199
-
 private val FIBONACCI_SEQUENCE: LongArray = buildList {
     var a = 0L
     var b = 1L
@@ -26,7 +24,7 @@ internal fun <Metrics> concat(left: RopeNode<Metrics>, right: RopeNode<Metrics>)
     if (left !is ConcatNode) {
         if (right is ConcatNode) {
             val rightChild = right.left
-            if (left.length + rightChild.length < splitLength) {
+            if (left.length + rightChild.length < Rope.SPLIT_LENGTH) {
                 val stringBuilder = StringBuilder()
                 left.joinToString(stringBuilder)
                 rightChild.joinToString(stringBuilder)
@@ -43,7 +41,7 @@ internal fun <Metrics> concat(left: RopeNode<Metrics>, right: RopeNode<Metrics>)
     if (right !is ConcatNode) {
         if (left is ConcatNode) {
             val leftChild = left.right
-            if (right.length + leftChild.length < splitLength) {
+            if (right.length + leftChild.length < Rope.SPLIT_LENGTH) {
                 val stringBuilder = StringBuilder()
                 leftChild.joinToString(stringBuilder)
                 right.joinToString(stringBuilder)
