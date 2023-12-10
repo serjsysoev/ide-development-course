@@ -32,7 +32,7 @@ fun EditorTabsView(model: Editors) = Row(Modifier.horizontalScroll(rememberScrol
 @Composable
 fun EditorTabView(model: Editor) = Surface(
     color = if (model.isActive) {
-        AppTheme.colors.backgroundDark
+        AppTheme.colors.background.backgroundDark
     } else {
         Color.Transparent
     }

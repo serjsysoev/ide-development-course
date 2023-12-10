@@ -6,12 +6,13 @@ import util.rope.Rope
 
 val HomeFolder: File get() = java.io.File(System.getProperty("user.home")).toProjectFile()
 
+
 interface File {
     val name: String
     val isDirectory: Boolean
     val children: List<File>
     val hasChildren: Boolean
-
+    val absolutePath: String
     fun read(): Rope<LineMetrics>
 }
 
@@ -21,6 +22,9 @@ fun java.io.File.toProjectFile(): File = object : File {
 
     override val isDirectory: Boolean
         get() = this@toProjectFile.isDirectory
+
+    override val absolutePath: String
+        get() = this@toProjectFile.absolutePath
 
     override val children: List<File>
         get() = this@toProjectFile

@@ -5,14 +5,15 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import util.HomeFolder
 import ui.common.AppTheme
 import ui.common.Settings
 import ui.editor.Editors
 import ui.filetree.FileTree
+import util.HomeFolder
 
 @Composable
 fun MainView() {
+
     val codeViewer = remember {
         val editors = Editors()
 
@@ -25,10 +26,11 @@ fun MainView() {
 
     DisableSelection {
         MaterialTheme(
-            colors = AppTheme.colors.material
+            colors = AppTheme.colors.background.material
         ) {
             Surface {
-                CodeViewerView(codeViewer)
+                WorkspacesViewerView(emptyList())
+//                CodeViewerView(codeViewer)
             }
         }
     }

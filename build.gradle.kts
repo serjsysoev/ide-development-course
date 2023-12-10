@@ -21,16 +21,21 @@ dependencies {
     // With compose.desktop.common you will also lose @Preview functionality
     implementation(compose.desktop.currentOs)
     implementation(compose.materialIconsExtended)
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    implementation("com.darkrockstudios:mpfilepicker:3.0.0")
 }
 
 compose.desktop {
     application {
         mainClass = "MainKt"
-
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "ide-development-template"
             packageVersion = "1.0.0"
         }
     }
+}
+
+tasks.create("Another IDE Desktop") {
+    dependsOn("desktop")
 }

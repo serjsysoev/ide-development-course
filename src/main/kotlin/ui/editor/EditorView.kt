@@ -4,7 +4,9 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.HorizontalScrollbar
 import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.gestures.*
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.rememberScrollableState
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.absolutePadding
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,7 +39,9 @@ import ui.common.FontSettings
 import ui.common.Settings
 import util.rope.*
 import java.util.logging.Logger
-import kotlin.math.*
+import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.math.roundToInt
 
 const val GUTTER_TEXT_OFFSET = 5
 const val GUTTER_SIZE = GUTTER_TEXT_OFFSET + 2
@@ -117,7 +121,7 @@ fun BoxScope.EditorView(model: Editor, settings: Settings) = key(model) {
         val verticalOffset = editorState.verticalScrollOffset.value
         val textSize = editorState.textSize
 
-        drawRect(AppTheme.colors.material.background, size = this.size)
+        drawRect(AppTheme.colors.background.material.background, size = this.size)
 
         drawSelection(editorState)
 
@@ -354,7 +358,7 @@ private fun DrawScope.drawGutter(
     textLength: Int
 ) {
     drawRect(
-        AppTheme.colors.material.background,
+        AppTheme.colors.background.material.background,
         size = Size(GUTTER_SIZE * textSize.width, size.height)
     )
 
@@ -405,5 +409,5 @@ private fun TextMeasurer.layoutLines(
     return RenderedText(textLayoutResult, from, to, settings.fontSize)
 }
 
-private fun getTextStyle(settings: FontSettings) =
+internal fun getTextStyle(settings: FontSettings) =
     TextStyle(fontFamily = settings.fontFamily, fontSize = settings.fontSize)
