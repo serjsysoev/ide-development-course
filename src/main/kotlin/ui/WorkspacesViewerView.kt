@@ -1,5 +1,6 @@
 package ui
 
+import BaseView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
@@ -23,8 +24,8 @@ import util.toProjectFile
 import java.io.File
 
 @Composable
-fun WorkspacesViewerView(existWorkspaces: List<Workspace>) {
-    val workspaces = remember { existWorkspaces.toMutableStateList()}
+fun WorkspacesViewerView(workSpaceViewer: BaseView.WorkspacesViewer, baseView: MutableState<BaseView>) {
+    val workspaces = remember { workSpaceViewer.workspaces.toMutableStateList() }
 
     Box(Modifier.fillMaxSize().background(color = AppTheme.colors.background.backgroundUltraDark)) {
 
@@ -37,7 +38,7 @@ fun WorkspacesViewerView(existWorkspaces: List<Workspace>) {
                     Column {
                         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("Workspaces", fontFamily = Fonts.jetbrainsMono(), fontWeight = FontWeight.Bold, fontSize = AppTheme.fontSize.large)
-                            CreateWorkspaceView(workspaces)
+                            CreateWorkspaceView(workspaces, workSpaceViewer)
                         }
 
                         Spacer(modifier = Modifier.height(15.dp))
@@ -53,8 +54,8 @@ fun WorkspacesViewerView(existWorkspaces: List<Workspace>) {
                                 Column(
                                     verticalArrangement = Arrangement.spacedBy(10.dp),
                                 ) {
-                                    workspaces.forEachIndexed { index, workspace ->
-                                        WorkspaceView(workspace, workspaces, index)
+                                    workspaces.forEachIndexed { index, _ ->
+                                        WorkspaceView(baseView, workSpaceViewer, workspaces, index)
                                     }
                                 }
                             }
@@ -68,9 +69,9 @@ fun WorkspacesViewerView(existWorkspaces: List<Workspace>) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun WorkspaceView(workspace: Workspace, workspaces: SnapshotStateList<Workspace>, indexOfCurrentWorkspace: Int) {
+fun WorkspaceView(baseView: MutableState<BaseView>, workSpaceViewer: BaseView.WorkspacesViewer, workspaces: SnapshotStateList<Workspace>, indexOfCurrentWorkspace: Int) {
     val interactionSource = remember { MutableInteractionSource() }
-
+    val workspace = workSpaceViewer.workspaces[indexOfCurrentWorkspace]
     val isHovered = interactionSource.collectIsHoveredAsState()
 
     val backgroundColor = if (isHovered.value) {
@@ -83,10 +84,14 @@ fun WorkspaceView(workspace: Workspace, workspaces: SnapshotStateList<Workspace>
         .fillMaxWidth()
         .clip(RoundedCornerShape(5.dp))
         .hoverable(interactionSource)
+        .clickable {
+            baseView.value = BaseView.CodeViewer(workSpaceViewer.workspaces[indexOfCurrentWorkspace])
+        }
         .background(backgroundColor),
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 7.dp)) {
             Row (modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+
                 Text(workspace.name, fontFamily = Fonts.jetbrainsMono(), fontWeight = FontWeight.Bold, fontSize = AppTheme.fontSize.medium)
 
                 val interactionSourceOfDots = remember { MutableInteractionSource() }
@@ -103,6 +108,7 @@ fun WorkspaceView(workspace: Workspace, workspaces: SnapshotStateList<Workspace>
                     .hoverable(interactionSourceOfDots)
                     .clickable {
                         workspaces.removeAt(indexOfCurrentWorkspace)
+                        workSpaceViewer.workspaces.removeAt(indexOfCurrentWorkspace)
                     }
                     .background(backgroundColorOfStars)
                 ) {
@@ -124,7 +130,7 @@ fun WorkspaceView(workspace: Workspace, workspaces: SnapshotStateList<Workspace>
 }
 
 @Composable
-fun CreateWorkspaceView(workspaces: SnapshotStateList<Workspace>) {
+fun CreateWorkspaceView(workspaces: SnapshotStateList<Workspace>, workspaceViewer: BaseView.WorkspacesViewer) {
     val interactionSource = remember { MutableInteractionSource() }
 
     val isHovered = interactionSource.collectIsHoveredAsState()
@@ -135,7 +141,6 @@ fun CreateWorkspaceView(workspaces: SnapshotStateList<Workspace>) {
         AppTheme.colors.background.backgroundDark
     }
 
-
     var showDirPicker by remember { mutableStateOf(false) }
 
     DirectoryPicker(showDirPicker) { path ->
@@ -145,6 +150,7 @@ fun CreateWorkspaceView(workspaces: SnapshotStateList<Workspace>) {
             val file = File(path)
             val workspace = Workspace(file.name, file.toProjectFile())
             workspaces.add(0, workspace)
+            workspaceViewer.workspaces.add(0, workspace)
         }
     }
 
