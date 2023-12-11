@@ -14,7 +14,6 @@ import ui.CodeViewerView
 import ui.WorkspacesViewerView
 import ui.common.AppTheme
 import ui.common.Settings
-import ui.editor.Editors
 import ui.filetree.FileTree
 
 
@@ -56,11 +55,10 @@ fun main() = application {
                         }
                         is BaseView.CodeViewer -> {
                             val codeViewer = remember {
-                                val editors = Editors()
-
                                 CodeViewer(
-                                    editors = editors,
-                                    fileTree = FileTree(view.workspace.file, editors),
+                                    workspace = view.workspace,
+                                    editors = view.workspace.editors,
+                                    fileTree = FileTree(view.workspace.file, view.workspace.editors),
                                     settings = Settings()
                                 )
                             }
