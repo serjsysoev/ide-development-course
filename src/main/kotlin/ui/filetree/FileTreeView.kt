@@ -118,6 +118,7 @@ private fun FileItemIcon(modifier: Modifier, model: FileTree.Node) = Box(modifie
             "kts" -> Icon(Icons.Default.Build, contentDescription = null, tint = Color(0xFF3E86A0))
             "properties" -> Icon(Icons.Default.Settings, contentDescription = null, tint = Color(0xFF62B543))
             "bat" -> Icon(Icons.Default.Launch, contentDescription = null, tint = Color(0xFF87939A))
+            "ascript" -> Icon(Icons.Default.PlayCircleOutline, contentDescription = null, tint = Color(0xFFFF9814))
             else -> Icon(Icons.Default.TextSnippet, contentDescription = null, tint = Color(0xFF87939A))
         }
     }

@@ -37,7 +37,8 @@ fun WorkspacesViewerView(workSpaceViewer: BaseView.WorkspacesViewer, baseView: M
                 Box(modifier = Modifier.fillMaxWidth(0.6f), contentAlignment = Alignment.TopStart) {
                     Column {
                         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Workspaces", fontFamily = Fonts.jetbrainsMono(), fontWeight = FontWeight.Bold, fontSize = AppTheme.fontSize.large)
+                            Text("Workspaces", fontFamily = Fonts.jetbrainsMono(), fontWeight = FontWeight.Bold, fontSize = AppTheme.fontSize.large, softWrap = false)
+                            Spacer(modifier = Modifier.padding(end = 15.dp))
                             CreateWorkspaceView(workspaces, workSpaceViewer)
                         }
 
@@ -92,7 +93,7 @@ fun WorkspaceView(baseView: MutableState<BaseView>, workSpaceViewer: BaseView.Wo
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 7.dp)) {
             Row (modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
 
-                Text(workspace.name, fontFamily = Fonts.jetbrainsMono(), fontWeight = FontWeight.Bold, fontSize = AppTheme.fontSize.medium)
+                Text(workspace.name, fontFamily = Fonts.jetbrainsMono(), fontWeight = FontWeight.Bold, fontSize = AppTheme.fontSize.medium, softWrap = false)
 
                 val interactionSourceOfDots = remember { MutableInteractionSource() }
                 val isHoveredOfStars = interactionSourceOfDots.collectIsHoveredAsState()
@@ -124,7 +125,7 @@ fun WorkspaceView(baseView: MutableState<BaseView>, workSpaceViewer: BaseView.Wo
                 absolutePath = if (index == null) absolutePath.takeLast(60) else "..." + absolutePath.substring(index.index)
             }
 
-            Text(absolutePath, fontFamily = Fonts.jetbrainsMono(), fontWeight = FontWeight.ExtraLight, fontSize=AppTheme.fontSize.small, color = AppTheme.colors.font.grayLight)
+            Text(absolutePath, fontFamily = Fonts.jetbrainsMono(), fontWeight = FontWeight.ExtraLight, fontSize=AppTheme.fontSize.small, color = AppTheme.colors.font.grayLight, softWrap = false)
         }
     }
 }
@@ -167,7 +168,8 @@ fun CreateWorkspaceView(workspaces: SnapshotStateList<Workspace>, workspaceViewe
             "Add Workspace...",
             fontFamily = Fonts.jetbrainsMono(),
             fontWeight = FontWeight.ExtraLight,
-            fontSize = AppTheme.fontSize.small
+            fontSize = AppTheme.fontSize.small,
+            softWrap = false
         )
     }
 }
