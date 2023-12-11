@@ -21,6 +21,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalFontFamilyResolver
@@ -106,7 +108,6 @@ fun BoxScope.EditorView(model: Editor, settings: Settings) = key(model) {
     }
 
     val requester = remember { FocusRequester() }
-
     Canvas(Modifier
         .fillMaxSize()
         .clipToBounds()
@@ -117,6 +118,7 @@ fun BoxScope.EditorView(model: Editor, settings: Settings) = key(model) {
         .pointerInput(editorState)
         .scrollable(verticalScrollState, Orientation.Vertical)
         .scrollable(horizontalScrollState, Orientation.Horizontal)
+        .pointerHoverIcon(PointerIcon.Text)
     ) {
         val verticalOffset = editorState.verticalScrollOffset.value
         val textSize = editorState.textSize
@@ -159,22 +161,19 @@ private fun DrawScope.drawSelection(editorState: EditorState) {
         drawRect(
             topLeft = editorState.codeToViewport(startPosition),
             size = Size((endPosition.x - startPosition.x) * textSize.width, textSize.height),
-            color = Color.Blue,
-            alpha = 0.3f
+            color = AppTheme.colors.code.selection,
         )
     } else {
         drawRect(
             topLeft = editorState.codeToViewport(startPosition),
             size = Size(size.width, textSize.height),
-            color = Color.Blue,
-            alpha = 0.3f
+            color = AppTheme.colors.code.selection,
         )
         for (lineNumber in startPosition.y + 1 until endPosition.y) {
             drawRect(
                 topLeft = editorState.codeToViewport(CodePosition(0, lineNumber)),
                 size = Size(size.width, textSize.height),
-                color = Color.Blue,
-                alpha = 0.3f
+                color = AppTheme.colors.code.selection,
             )
 
         }
@@ -182,8 +181,7 @@ private fun DrawScope.drawSelection(editorState: EditorState) {
         drawRect(
             topLeft = Offset(EDITOR_TEXT_OFFSET * textSize.width, y),
             size = Size(x - EDITOR_TEXT_OFFSET * textSize.width, textSize.height),
-            color = Color.Blue,
-            alpha = 0.3f
+            color = AppTheme.colors.code.selection,
         )
     }
 }

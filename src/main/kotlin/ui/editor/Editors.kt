@@ -15,6 +15,8 @@ class Editors {
     val active: Editor? get() = selectedEditor.selected
 
     fun open(file: File) {
+        editors.firstOrNull {it.file == file}?.let { it.activate(); return }
+
         val editor = Editor(file, selectedEditor) { close(it) }
         editors.add(editor)
         editor.activate()

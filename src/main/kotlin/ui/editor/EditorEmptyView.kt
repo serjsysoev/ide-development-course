@@ -5,15 +5,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Icon
-import androidx.compose.material.LocalContentColor
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import ui.common.AppTheme
+import ui.common.Fonts
 
 @Composable
 fun EditorEmptyView() = Box(Modifier.fillMaxSize()) {
@@ -21,14 +22,16 @@ fun EditorEmptyView() = Box(Modifier.fillMaxSize()) {
         Icon(
             Icons.Default.Code,
             contentDescription = null,
-            tint = LocalContentColor.current.copy(alpha = 0.60f),
+            tint = AppTheme.colors.font.grayLight,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
 
         Text(
             "To view file open it from the file tree",
-            color = LocalContentColor.current.copy(alpha = 0.60f),
-            fontSize = 20.sp,
+            color = AppTheme.colors.font.grayLight,
+            fontFamily = Fonts.jetbrainsMono(),
+            fontWeight = FontWeight.Light,
+            fontSize = AppTheme.fontSize.medium,
             modifier = Modifier.align(Alignment.CenterHorizontally).padding(16.dp)
         )
     }

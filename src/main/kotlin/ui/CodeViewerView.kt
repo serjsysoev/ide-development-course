@@ -56,7 +56,7 @@ fun CodeViewerView(model: CodeViewer) {
             if (model.editors.active != null) {
                 Column(Modifier.fillMaxSize()) {
                     EditorTabsView(model.editors)
-                    Box(Modifier.weight(1f)) {
+                    Box {
                         EditorView(model.editors.active!!, model.settings)
                     }
                 }
