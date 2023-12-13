@@ -10,13 +10,13 @@ data class Location(val startOffset: Int, val endOffset: Int = startOffset)
 
 interface Token
 
-data class ConcreteToken<T: Token>(val value: T, val location: Location)
+data class ConcreteToken<T: Token>(val token: T, val location: Location)
 
-data class TokenError(val offset: Int, val message: String = "Unexpected token, offset: $offset")
+data class TokenError(val offset: Int, val textOfError: String = "Unexpected token, offset: $offset"): Exception(textOfError)
 
 
-class Tokenizer(private val input: CharSequence, private val parsers: List<TokenParser<out Token>>) {
-    private var curIndex = 0
+class Tokenizer(val input: CharSequence, private val parsers: List<TokenParser<out Token>>) {
+    var curIndex = 0
 
     fun skipWhitespaces() {
         while (!isEOF() && peek().isWhitespace()) {
@@ -24,11 +24,19 @@ class Tokenizer(private val input: CharSequence, private val parsers: List<Token
         }
     }
 
-    fun tokenize(): List<Either<ConcreteToken<Token>, TokenError>> {
-        val tokens = mutableListOf<Either<ConcreteToken<Token>, TokenError>>()
+    fun tokenize(): List<ConcreteToken<Token>> {
+        val tokens = mutableListOf<ConcreteToken<Token>>()
 
         while (!isEOF()) {
-            tokens.add(recognizeToken())
+
+            when(val result = recognizeToken()) {
+                is Either.Left -> {
+                    tokens.add(result.left)
+                }
+                is Either.Right -> {
+                    throw Exception(result.right)
+                }
+            }
             skipWhitespaces()
         }
         return tokens
@@ -59,7 +67,7 @@ class Tokenizer(private val input: CharSequence, private val parsers: List<Token
             curIndex += 1
         }
 
-        return stringBuilder
+        return stringBuilder.toString()
     }
 
     fun isEOF() = curIndex >= input.length

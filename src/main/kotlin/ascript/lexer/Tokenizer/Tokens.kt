@@ -33,16 +33,14 @@ val MARKUP_TOKENS = listOf(
 )
 
 
+class BooleanToken(val value: Boolean): Token
 
-open class BooleanToken(symbol: String, val value: Boolean) : SymbolToken(symbol)
+object BooleanTokenMatcher: RegexpTokenMatcher<BooleanToken>("(true|false)") {
+    override fun onMatch(matchedValue: String) : BooleanToken {
+        return BooleanToken(matchedValue == "true")
+    }
+}
 
-object TrueToken : BooleanToken("true", true)
-object FalseToken : BooleanToken("false", false)
-
-val BOOLEAN_TOKENS = listOf(
-    TrueToken,
-    FalseToken
-)
 
 abstract class OpToken(symbol: String, val maybeUnary: Boolean, val maybeBinary: Boolean) : SymbolToken(symbol)
 
@@ -50,40 +48,40 @@ abstract class OpToken(symbol: String, val maybeUnary: Boolean, val maybeBinary:
 object StringConcatOpToken : OpToken("%", false, true)
 
 // Operations on numbers
-interface OnNumbers
+interface OnNumbers: Token
 
 // Operations return number
-interface RetNumbers
+interface RetNumbers: Token
 
 // result of operators is boolean
-interface RetBoolean
+interface RetBoolean: Token
 
 // Operations on booleans
-interface OnBooleans
+interface OnBooleans: Token
 
 
-interface ArithmeticOp
+interface ArithmeticOp: Token
 object PlusOpToken : OpToken("+", false, true), OnNumbers, RetNumbers, ArithmeticOp
 object MinusOpToken : OpToken("-", true, true), OnNumbers, RetNumbers, ArithmeticOp
 object MulOpToken : OpToken("*", false, true), OnNumbers, RetNumbers, ArithmeticOp
 object DivOpToken : OpToken("/", false, true), OnNumbers, RetNumbers, ArithmeticOp
 
 
-interface LogicalOp
+interface LogicalOp : Token
 object NotOpToken : OpToken("!", true, false), OnBooleans, RetBoolean, LogicalOp
 object OrOpToken : OpToken("||", false, true), OnBooleans, RetBoolean, LogicalOp
 object AndOpToken : OpToken("&&", false, true), OnBooleans, RetBoolean, LogicalOp
 
 
 // Operations on objects
-interface OnObjects
+interface OnObjects : Token
 
-interface EqualityOp
+interface EqualityOp : Token
 object EqOpToken : OpToken("==", false, true), OnObjects, RetBoolean, EqualityOp
 object NotEqOpToken : OpToken("!=", false, true), OnObjects, RetBoolean, EqualityOp
 
 
-interface CompOperatorOp
+interface CompOperatorOp : Token
 object LessOpToken : OpToken("<", false, true), OnNumbers, RetBoolean, CompOperatorOp
 object LessOrEqualOpToken : OpToken("<=", false, true), OnNumbers, RetBoolean, CompOperatorOp
 object GreaterOpToken : OpToken(">", false, true), OnNumbers, RetBoolean, CompOperatorOp
@@ -148,11 +146,26 @@ val TYPE_TOKENS = listOf(
 )
 
 
-abstract class RegexpToken(val pattern: String): Token
+abstract class RegexpTokenMatcher<T>(val pattern: String): Token {
+    abstract fun onMatch(matchedValue: String): T
+}
 
-object IdentifierToken: RegexpToken("^[a-zA-Z_][a-zA-Z0-9_]*\$")
+class IdentifierToken(val value: String): Token
 
-object NumberToken: RegexpToken("^[0-9_]+\$")
+object IdentifierTokenMatcher: RegexpTokenMatcher<IdentifierToken>("[a-zA-Z_][a-zA-Z0-9_]*") {
+    override fun onMatch(matchedValue: String) : IdentifierToken {
+        return IdentifierToken(matchedValue)
+    }
+}
+
+class NumberToken(val value: Int): Token
+
+object NumberTokenMatcher: RegexpTokenMatcher<NumberToken>("(0|[1-9][0-9_]*)") {
+    override fun onMatch(matchedValue: String): NumberToken {
+        return NumberToken(matchedValue.toInt())
+    }
+}
+
 
 data class StringLiteralToken(val value: String): Token
 
@@ -162,12 +175,12 @@ internal val TOKENS_PARSER: List<TokenParser<out Token>> = listOf(
     StringLiteralParser(),
     SymbolParser(KEYWORD_TOKENS),
     SymbolParser(TYPE_TOKENS),
-    SymbolParser(BOOLEAN_TOKENS),
+    RegexpTokenParser(BooleanTokenMatcher),
     SymbolParser(TWO_CHAR_OP_TOKENS),
     SymbolParser(ONE_CHAR_OP_TOKENS),
     SymbolParser(MARKUP_TOKENS),
-    RegexpTokenParser(NumberToken),
-    RegexpTokenParser(IdentifierToken),
+    RegexpTokenParser(NumberTokenMatcher),
+    RegexpTokenParser(IdentifierTokenMatcher),
 )
 
 

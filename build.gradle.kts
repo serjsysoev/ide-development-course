@@ -23,6 +23,8 @@ dependencies {
     implementation(compose.materialIconsExtended)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     implementation("com.darkrockstudios:mpfilepicker:3.0.0")
+    testImplementation(kotlin("test"))
+
 }
 
 compose.desktop {

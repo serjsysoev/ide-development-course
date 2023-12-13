@@ -1,5 +1,6 @@
 package ascript.lexer.Tokenizer
 
+import language.lexer.tokenizer.Token
 import language.lexer.tokenizer.TokenParser
 import language.lexer.tokenizer.Tokenizer
 
@@ -18,14 +19,17 @@ class SymbolParser(private val tokens: List<SymbolToken>): TokenParser<SymbolTok
     }
 }
 
-class RegexpTokenParser(private val token: RegexpToken): TokenParser<RegexpToken> {
-    override fun Tokenizer.parse(): RegexpToken? {
-        val text = takeWhile { !it.isWhitespace()}
+open class RegexpTokenParser<T: Token>(private val matcher: RegexpTokenMatcher<T>): TokenParser<T> {
+    override fun Tokenizer.parse(): T? {
+        val regex = Regex(matcher.pattern)
 
-        if (token.pattern.toRegex().matchEntire(text) != null) {
-            return token
+        val match = regex.matchAt(input, curIndex)
+
+        if (match != null && match.range.start == curIndex) {
+           curIndex = match.range.endInclusive
+           inc()
+           return matcher.onMatch(match.value)
         }
-
         return null
     }
 }
@@ -37,8 +41,8 @@ class StringLiteralParser: TokenParser<StringLiteralToken> {
             inc()
 
             val text = takeWhile { it != '\"' }
-
             if (!isEOF() && peek() == '\"') {
+                inc()
                 return StringLiteralToken(text.toString())
             }
         }
