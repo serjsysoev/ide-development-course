@@ -76,16 +76,17 @@ object AndOpToken : OpToken("&&", false, true), OnBooleans, RetBoolean, LogicalO
 // Operations on objects
 interface OnObjects : Token
 
+interface RelationOp: Token
 interface EqualityOp : Token
-object EqOpToken : OpToken("==", false, true), OnObjects, RetBoolean, EqualityOp
-object NotEqOpToken : OpToken("!=", false, true), OnObjects, RetBoolean, EqualityOp
+object EqOpToken : OpToken("==", false, true), OnObjects, RetBoolean, EqualityOp, RelationOp
+object NotEqOpToken : OpToken("!=", false, true), OnObjects, RetBoolean, EqualityOp, RelationOp
 
 
 interface CompOperatorOp : Token
-object LessOpToken : OpToken("<", false, true), OnNumbers, RetBoolean, CompOperatorOp
-object LessOrEqualOpToken : OpToken("<=", false, true), OnNumbers, RetBoolean, CompOperatorOp
-object GreaterOpToken : OpToken(">", false, true), OnNumbers, RetBoolean, CompOperatorOp
-object GreaterOrEqualOpToken : OpToken(">=", false, true), OnNumbers, RetBoolean, CompOperatorOp
+object LessOpToken : OpToken("<", false, true), OnNumbers, RetBoolean, CompOperatorOp, RelationOp
+object LessOrEqualOpToken : OpToken("<=", false, true), OnNumbers, RetBoolean, CompOperatorOp, RelationOp
+object GreaterOpToken : OpToken(">", false, true), OnNumbers, RetBoolean, CompOperatorOp, RelationOp
+object GreaterOrEqualOpToken : OpToken(">=", false, true), OnNumbers, RetBoolean, CompOperatorOp, RelationOp
 
 
 val ONE_CHAR_OP_TOKENS = listOf(
@@ -115,7 +116,7 @@ object IfKeywordToken: KeywordToken("if")
 object ElseKeywordToken: KeywordToken("else")
 object VarToken: KeywordToken("var")
 object WhileKeywordToken: KeywordToken("while")
-object FuncKeywordToken: KeywordToken("fun")
+object FuncKeywordToken: KeywordToken("func")
 object ReturnKeywordToken: KeywordToken("return")
 object ProcKeywordToken: KeywordToken("proc")
 object PrintKeywordToken: KeywordToken("print")

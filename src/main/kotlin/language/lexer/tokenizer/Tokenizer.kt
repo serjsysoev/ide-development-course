@@ -28,7 +28,7 @@ class Tokenizer(val input: CharSequence, private val parsers: List<TokenParser<o
         val tokens = mutableListOf<ConcreteToken<Token>>()
 
         while (!isEOF()) {
-
+            skipWhitespaces()
             when(val result = recognizeToken()) {
                 is Either.Left -> {
                     tokens.add(result.left)
@@ -46,6 +46,8 @@ class Tokenizer(val input: CharSequence, private val parsers: List<TokenParser<o
          val startOffset = curIndex
 
          for (parser in parsers) {
+
+
              val result = parser.run { this@Tokenizer.parse() }
 
              if (result != null) {
@@ -55,6 +57,8 @@ class Tokenizer(val input: CharSequence, private val parsers: List<TokenParser<o
                  curIndex = startOffset
              }
          }
+
+
 
          return Either.Right(TokenError(curIndex))
      }

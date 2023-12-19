@@ -7,11 +7,22 @@ import language.lexer.tokenizer.Tokenizer
 
 class SymbolParser(private val tokens: List<SymbolToken>): TokenParser<SymbolToken> {
     override fun Tokenizer.parse(): SymbolToken? {
-        val text = takeWhile { !it.isWhitespace()}
-
         for (token in tokens) {
-            if (token.symbol == text) {
+            val start = this.curIndex
+
+            val text = StringBuilder()
+            var i = 0
+
+            while (!isEOF() && i < token.symbol.length && peek() == token.symbol[i]) {
+                text.append(peek())
+                i += 1
+                inc()
+            }
+
+            if (token.symbol == text.toString()) {
                 return token
+            } else {
+                curIndex = start
             }
         }
 
