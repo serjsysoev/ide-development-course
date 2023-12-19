@@ -1,35 +1,31 @@
 package language.grammar
 
+import language.ast.ASTNode
 import language.lexer.tokenizer.ConcreteToken
 import language.lexer.tokenizer.Location
 import language.lexer.tokenizer.Token
 
 
-interface ASTNode {
-    abstract val location: Location
-}
-
-
-fun <T: ANode> T.asParam(isParameter: Boolean = true): T {
+fun <T : ANode> T.asParam(isParameter: Boolean = true): T {
     this.isParameter = isParameter
     return this
 }
 
 // extract rules and build ASTNode by parameters
-interface Rule <T: ASTNode> {
+interface Rule<T : ASTNode> {
     abstract val pattern: ANode
     abstract fun onMatch(location: Location, vararg args: Any): Result<T>
 
     fun onMatchWithParamResult(location: Location, vararg args: Any): Result<ANode.Terminal.ParamResult<T>> {
         return onMatch(location, *args).fold(
-            onSuccess = {Result.success(ANode.Terminal.ParamResult(it)) },
-            onFailure = {Result.failure(it)},
+            onSuccess = { Result.success(ANode.Terminal.ParamResult(it)) },
+            onFailure = { Result.failure(it) },
         )
     }
 }
 
 
-class ASTBuilder<T: ASTNode>(private val rule: Rule<T>, private val tokens: List<ConcreteToken<Token>>) {
+class ASTBuilder<T : ASTNode>(private val rule: Rule<T>, private val tokens: List<ConcreteToken<Token>>) {
     private var curPos = 0
 
     fun build(): Result<T> {
@@ -45,7 +41,6 @@ class ASTBuilder<T: ASTNode>(private val rule: Rule<T>, private val tokens: List
     }
 
     private fun processRule(rule: Rule<*>): Result<ANode.Terminal.ParamResult<*>> {
-        println(rule::class.simpleName)
         val start = curPos
         val startOffset = currentOffset()
         val result = processNodes(rule.pattern)
@@ -53,7 +48,7 @@ class ASTBuilder<T: ASTNode>(private val rule: Rule<T>, private val tokens: List
         return result.fold(
             onSuccess = { nodes ->
                 val args = nodes.filterIsInstance<ANode.Terminal.ParamResult<Any>>().map { it.value }
-                val paramRes = rule.onMatchWithParamResult(Location(startOffset, currentOffset()), *args.toTypedArray())
+                val paramRes = rule.onMatchWithParamResult(Location(start, curPos), *args.toTypedArray())
                 paramRes
             },
             onFailure = {
@@ -77,20 +72,20 @@ class ASTBuilder<T: ASTNode>(private val rule: Rule<T>, private val tokens: List
     }
 
 
-
     private fun processList(pattern: ANode.List): Result<List<ANode>> {
         return when (pattern) {
             is ANode.List.AndList -> {
                 processAndList(pattern).fold(
                     onSuccess = {
-                    if (!pattern.isParameter) {
-                        Result.success(it.nodes)
-                    } else {
-                        Result.success(
-                            listOf(it.asParam(pattern.isParameter).toParamResult()))
-                    }
-                },
-                onFailure = {Result.failure(it)})
+                        if (!pattern.isParameter) {
+                            Result.success(it.nodes)
+                        } else {
+                            Result.success(
+                                listOf(it.asParam(pattern.isParameter).toParamResult())
+                            )
+                        }
+                    },
+                    onFailure = { Result.failure(it) })
             }
 
             is ANode.List.OrList -> {
@@ -126,7 +121,6 @@ class ASTBuilder<T: ASTNode>(private val rule: Rule<T>, private val tokens: List
     private fun processAndList(pattern: ANode.List.AndList): Result<ANode.List.AndList> {
         val start = curPos
         val nodes: MutableList<ANode> = mutableListOf()
-        val startOffset = currentOffset()
         for (node in pattern.nodes) {
             val result = processNodes(node)
 
@@ -137,8 +131,11 @@ class ASTBuilder<T: ASTNode>(private val rule: Rule<T>, private val tokens: List
                 nodes.addAll(it)
             }
         }
-        val endOffset = currentOffset()
-        return Result.success(ANode.List.AndList(nodes.filterIsInstance<ANode.Terminal.ParamResult<*>>().toMutableList(), Location(startOffset, endOffset)))
+        return Result.success(
+            ANode.List.AndList(
+                nodes.filterIsInstance<ANode.Terminal.ParamResult<*>>().toMutableList(), Location(start, curPos)
+            )
+        )
     }
 
     private fun processRepeatable(pattern: ANode.List.Repeatable): Result<List<ANode>> {
@@ -208,6 +205,7 @@ class ASTBuilder<T: ASTNode>(private val rule: Rule<T>, private val tokens: List
                     },
                 )
             }
+
             is ANode.Terminal.Token<*> -> {
                 processToken(pattern).fold(
                     onSuccess = {
@@ -219,6 +217,7 @@ class ASTBuilder<T: ASTNode>(private val rule: Rule<T>, private val tokens: List
                     }
                 )
             }
+
             ANode.Terminal.Eps -> {
                 Result.success(listOf(ANode.Terminal.Eps.asParam(pattern.isParameter).toParamResult()))
             }
@@ -248,7 +247,7 @@ class ASTBuilder<T: ASTNode>(private val rule: Rule<T>, private val tokens: List
         )
     }
 
-    private fun <T: ANode> T.toParamResult(): ANode {
+    private fun <T : ANode> T.toParamResult(): ANode {
         return if (this.isParameter) {
             ANode.Terminal.ParamResult(this)
         } else this

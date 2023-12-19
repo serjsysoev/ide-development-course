@@ -33,10 +33,10 @@ val MARKUP_TOKENS = listOf(
 )
 
 
-class BooleanToken(val value: Boolean): Token
+class BooleanToken(val value: Boolean) : Token
 
-object BooleanTokenMatcher: RegexpTokenMatcher<BooleanToken>("(true|false)") {
-    override fun onMatch(matchedValue: String) : BooleanToken {
+object BooleanTokenMatcher : RegexpTokenMatcher<BooleanToken>("(true|false)") {
+    override fun onMatch(matchedValue: String): BooleanToken {
         return BooleanToken(matchedValue == "true")
     }
 }
@@ -48,19 +48,19 @@ abstract class OpToken(symbol: String, val maybeUnary: Boolean, val maybeBinary:
 object StringConcatOpToken : OpToken("%", false, true)
 
 // Operations on numbers
-interface OnNumbers: Token
+interface OnNumbers : Token
 
 // Operations return number
-interface RetNumbers: Token
+interface RetNumbers : Token
 
 // result of operators is boolean
-interface RetBoolean: Token
+interface RetBoolean : Token
 
 // Operations on booleans
-interface OnBooleans: Token
+interface OnBooleans : Token
 
 
-interface ArithmeticOp: Token
+interface ArithmeticOp : Token
 object PlusOpToken : OpToken("+", false, true), OnNumbers, RetNumbers, ArithmeticOp
 object MinusOpToken : OpToken("-", true, true), OnNumbers, RetNumbers, ArithmeticOp
 object MulOpToken : OpToken("*", false, true), OnNumbers, RetNumbers, ArithmeticOp
@@ -76,7 +76,7 @@ object AndOpToken : OpToken("&&", false, true), OnBooleans, RetBoolean, LogicalO
 // Operations on objects
 interface OnObjects : Token
 
-interface RelationOp: Token
+interface RelationOp : Token
 interface EqualityOp : Token
 object EqOpToken : OpToken("==", false, true), OnObjects, RetBoolean, EqualityOp, RelationOp
 object NotEqOpToken : OpToken("!=", false, true), OnObjects, RetBoolean, EqualityOp, RelationOp
@@ -110,16 +110,16 @@ val TWO_CHAR_OP_TOKENS: List<OpToken> = listOf(
 )
 
 
-abstract class KeywordToken(symbol: String): SymbolToken(symbol)
+abstract class KeywordToken(symbol: String) : SymbolToken(symbol)
 
-object IfKeywordToken: KeywordToken("if")
-object ElseKeywordToken: KeywordToken("else")
-object VarToken: KeywordToken("var")
-object WhileKeywordToken: KeywordToken("while")
-object FuncKeywordToken: KeywordToken("func")
-object ReturnKeywordToken: KeywordToken("return")
-object ProcKeywordToken: KeywordToken("proc")
-object PrintKeywordToken: KeywordToken("print")
+object IfKeywordToken : KeywordToken("if")
+object ElseKeywordToken : KeywordToken("else")
+object VarToken : KeywordToken("var")
+object WhileKeywordToken : KeywordToken("while")
+object FuncKeywordToken : KeywordToken("func")
+object ReturnKeywordToken : KeywordToken("return")
+object ProcKeywordToken : KeywordToken("proc")
+object PrintKeywordToken : KeywordToken("print")
 
 
 val KEYWORD_TOKENS = listOf(
@@ -147,29 +147,28 @@ val TYPE_TOKENS = listOf(
 )
 
 
-abstract class RegexpTokenMatcher<T>(val pattern: String): Token {
+abstract class RegexpTokenMatcher<T>(val pattern: String) : Token {
     abstract fun onMatch(matchedValue: String): T
 }
 
-class IdentifierToken(val value: String): Token
+class IdentifierToken(val value: String) : Token
 
-object IdentifierTokenMatcher: RegexpTokenMatcher<IdentifierToken>("[a-zA-Z_][a-zA-Z0-9_]*") {
-    override fun onMatch(matchedValue: String) : IdentifierToken {
+object IdentifierTokenMatcher : RegexpTokenMatcher<IdentifierToken>("[a-zA-Z_][a-zA-Z0-9_]*") {
+    override fun onMatch(matchedValue: String): IdentifierToken {
         return IdentifierToken(matchedValue)
     }
 }
 
-class NumberToken(val value: Int): Token
+class NumberToken(val value: Int) : Token
 
-object NumberTokenMatcher: RegexpTokenMatcher<NumberToken>("(0|[1-9][0-9_]*)") {
+object NumberTokenMatcher : RegexpTokenMatcher<NumberToken>("(0|[1-9][0-9_]*)") {
     override fun onMatch(matchedValue: String): NumberToken {
         return NumberToken(matchedValue.toInt())
     }
 }
 
 
-data class StringLiteralToken(val value: String): Token
-
+data class StringLiteralToken(val value: String) : Token
 
 
 internal val TOKENS_PARSER: List<TokenParser<out Token>> = listOf(

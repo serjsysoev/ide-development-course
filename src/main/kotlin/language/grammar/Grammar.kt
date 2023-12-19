@@ -1,51 +1,60 @@
 package language.grammar
+
+import language.ast.ASTNode
 import language.lexer.tokenizer.ConcreteToken
 import language.lexer.tokenizer.Location
 import language.lexer.tokenizer.Token
 import kotlin.reflect.KClass
 
 
-
 // Abstract Node
 sealed class ANode(var location: Location? = null, var isParameter: Boolean = false) {
-    sealed class List(location: Location? = null): ANode(location) {
+    sealed class List(location: Location? = null) : ANode(location) {
         class OrList(val nodes: MutableList<ANode>, location: Location? = null) : List(location)
 
         class AndList(val nodes: MutableList<ANode>, location: Location? = null) : List(location)
 
-        class Repeatable(val node: ANode, val condition: REPEAT_CONDITION = REPEAT_CONDITION.UNLIMITED, val separator: ANode? = null): List()
+        class Repeatable(
+            val node: ANode,
+            val condition: REPEAT_CONDITION = REPEAT_CONDITION.UNLIMITED,
+            val separator: ANode? = null
+        ) : List()
     }
 
 
-    sealed class Terminal(location: Location? = null): ANode(location) {
+    sealed class Terminal(location: Location? = null) : ANode(location) {
 
-        data class Token<T: language.lexer.tokenizer.Token>(val tokenType: KClass<out T>, var value: ConcreteToken<T>? = null, val loc: Location? = null) : Terminal(loc) {
-            operator fun invoke() : Terminal.Token<T> {
+        data class Token<T : language.lexer.tokenizer.Token>(
+            val tokenType: KClass<out T>,
+            var value: ConcreteToken<T>? = null,
+            val loc: Location? = null
+        ) : Terminal(loc) {
+            operator fun invoke(): Terminal.Token<T> {
                 return copy()
             }
         }
 
-        object Eps: Terminal()
+        object Eps : Terminal()
 
-        data class Optional(val node: ANode): Terminal()
+        data class Optional(val node: ANode) : Terminal()
 
-        abstract class Rule<T: ASTNode>: Terminal(), language.grammar.Rule<T>
+        abstract class Rule<T : ASTNode> : Terminal(), language.grammar.Rule<T>
 
-        class ParamResult<T>(val value: T): Terminal()
+        class ParamResult<T>(val value: T) : Terminal()
     }
 
 }
 
 sealed class REPEAT_CONDITION {
-    object UNLIMITED: REPEAT_CONDITION()
-    object ONE_AND_MORE: REPEAT_CONDITION()
+    object UNLIMITED : REPEAT_CONDITION()
+    object ONE_AND_MORE : REPEAT_CONDITION()
 }
 
 infix fun ANode.Terminal.or(node: ANode): ANode.List.OrList {
     return (ANode.List.OrList(mutableListOf(this)) or node)
 }
 
-infix fun ANode.Terminal.and(node: ANode) : ANode.List.AndList {
+infix fun ANode.Terminal.and(node: ANode): ANode.List.AndList {
     return ANode.List.AndList(mutableListOf(this)) and node
 }
 
@@ -77,12 +86,12 @@ infix fun ANode.List.Repeatable.or(node: ANode): ANode.List.OrList {
 }
 
 
-fun <T: Token> KClass<T>.asANode(): ANode.Terminal.Token<T> {
+fun <T : Token> KClass<T>.asANode(): ANode.Terminal.Token<T> {
     return ANode.Terminal.Token(this)
 }
 
 
-fun ANode.repeatable(condition: REPEAT_CONDITION = REPEAT_CONDITION.UNLIMITED) : ANode.List.Repeatable {
+fun ANode.repeatable(condition: REPEAT_CONDITION = REPEAT_CONDITION.UNLIMITED): ANode.List.Repeatable {
     return ANode.List.Repeatable(this, condition = condition)
 }
 

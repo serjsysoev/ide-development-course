@@ -1,7 +1,6 @@
 package language.structures
 
 class SpaghettiStack<T> {
-
     private var nodeOnTop: Node<T>? = null
 
     private class Node<T>(

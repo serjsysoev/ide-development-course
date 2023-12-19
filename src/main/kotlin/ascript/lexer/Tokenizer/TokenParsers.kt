@@ -5,7 +5,7 @@ import language.lexer.tokenizer.TokenParser
 import language.lexer.tokenizer.Tokenizer
 
 
-class SymbolParser(private val tokens: List<SymbolToken>): TokenParser<SymbolToken> {
+class SymbolParser(private val tokens: List<SymbolToken>) : TokenParser<SymbolToken> {
     override fun Tokenizer.parse(): SymbolToken? {
         for (token in tokens) {
             val start = this.curIndex
@@ -30,23 +30,23 @@ class SymbolParser(private val tokens: List<SymbolToken>): TokenParser<SymbolTok
     }
 }
 
-open class RegexpTokenParser<T: Token>(private val matcher: RegexpTokenMatcher<T>): TokenParser<T> {
+open class RegexpTokenParser<T : Token>(private val matcher: RegexpTokenMatcher<T>) : TokenParser<T> {
     override fun Tokenizer.parse(): T? {
         val regex = Regex(matcher.pattern)
 
         val match = regex.matchAt(input, curIndex)
 
         if (match != null && match.range.start == curIndex) {
-           curIndex = match.range.endInclusive
-           inc()
-           return matcher.onMatch(match.value)
+            curIndex = match.range.endInclusive
+            inc()
+            return matcher.onMatch(match.value)
         }
         return null
     }
 }
 
 
-class StringLiteralParser: TokenParser<StringLiteralToken> {
+class StringLiteralParser : TokenParser<StringLiteralToken> {
     override fun Tokenizer.parse(): StringLiteralToken? {
         if (!isEOF() && peek() == '\"') {
             inc()

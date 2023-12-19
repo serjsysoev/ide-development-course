@@ -6,9 +6,8 @@ import ascript.lexer.AScriptLexer
 import language.grammar.ASTBuilder
 
 
-fun createProgram(input: CharSequence) : Result<Program> {
+fun createProgram(input: CharSequence): Result<Program> {
     val tokens = AScriptLexer().tokenize(input)
-    println(tokens)
     return ASTBuilder(AProgram(), tokens).build()
 }
 
@@ -25,9 +24,5 @@ fun main() {
         }
         """
 
-    createProgram(myProgramm).onSuccess {
-        println(it)
-    }.onFailure {
-        println(it)
-    }
+
 }

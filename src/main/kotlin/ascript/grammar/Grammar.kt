@@ -41,20 +41,20 @@ val AStringType = StringTypeToken::class.asANode()
 val ABooleanType = BoolTypeToken::class.asANode()
 
 
-fun <T> ErrorOnElse(location: Location) : Result<T> {
+fun <T> ErrorOnElse(location: Location): Result<T> {
     throw UnexpectedExpressionError(location)
     return Result.failure<T>(UnexpectedExpressionError(location))
 }
 
-class AExpr(): ANode.Terminal.Rule<Expr>() {
+class AExpr() : ANode.Terminal.Rule<Expr>() {
     override val pattern: ANode
         get() = (
                 (ATerm() and APlusOp().asParam() and AExpr()).asParam()
-                or (ATerm() and AOrOp().asParam() and AExpr()).asParam()
-                or (ATerm() and AStringConcatOp().asParam() and AExpr()).asParam()
-                or (ATerm() and AOrOp().asParam() and AExpr()).asParam()
-                or ATerm()
-                or (AExpr() and ARelationOp().asParam() and AExpr()).asParam()
+                        or (ATerm() and AOrOp().asParam() and AExpr()).asParam()
+                        or (ATerm() and AStringConcatOp().asParam() and AExpr()).asParam()
+                        or (ATerm() and AOrOp().asParam() and AExpr()).asParam()
+                        or ATerm()
+                        or (AExpr() and ARelationOp().asParam() and AExpr()).asParam()
                 )
 
     override fun onMatch(location: Location, vararg args: Any): Result<Expr> {
@@ -64,13 +64,15 @@ class AExpr(): ANode.Terminal.Rule<Expr>() {
             is List.AndList -> {
                 val nodes = param.nodes.filterIsInstance<ParamResult<*>>().map { it.value }
                 val leftResult = nodes[0]
-                val leftExpr = when(leftResult) {
+                val leftExpr = when (leftResult) {
                     is Expr -> {
                         leftResult
                     }
+
                     is Term -> {
                         leftResult.expr
                     }
+
                     else -> {
                         return ErrorOnElse(location)
                     }
@@ -79,9 +81,11 @@ class AExpr(): ANode.Terminal.Rule<Expr>() {
                 val operation = nodes[1] as ANode.Terminal.Token<OpToken>
                 Result.success(Expr.BinaryOpExpr(leftExpr, rightExp, operation, location))
             }
+
             is Term -> {
                 Result.success(param.expr)
             }
+
             else -> {
                 ErrorOnElse(location)
             }
@@ -89,7 +93,7 @@ class AExpr(): ANode.Terminal.Rule<Expr>() {
     }
 }
 
-class ATerm: ANode.Terminal.Rule<Term>() {
+class ATerm : ANode.Terminal.Rule<Term>() {
     override val pattern: ANode
         get() = ((AFactor() and AMulOp().asParam() and ATerm()).asParam()
                 or (AFactor() and ADivOp().asParam() and ATerm()).asParam()
@@ -106,9 +110,12 @@ class ATerm: ANode.Terminal.Rule<Term>() {
                 val factor = nodes[0] as Factor
                 Result.success(Term(Expr.BinaryOpExpr(term.expr, factor.expr, operation, term.location), location))
             }
+
             is Factor -> {
                 Result.success(Term(param.expr, location))
-            } else -> {
+            }
+
+            else -> {
                 ErrorOnElse(location)
             }
         }
@@ -116,7 +123,7 @@ class ATerm: ANode.Terminal.Rule<Term>() {
 }
 
 
-class AFactor: ANode.Terminal.Rule<Factor>() {
+class AFactor : ANode.Terminal.Rule<Factor>() {
     override val pattern: ANode
         get() = ((ANotOp().asParam() and AFactor()).asParam()
                 or (AMinusOp().asParam() and AFactor()).asParam()
@@ -130,35 +137,47 @@ class AFactor: ANode.Terminal.Rule<Factor>() {
         return when (param) {
             is List.AndList -> {
                 val nodes = param.nodes.filterIsInstance<ParamResult<*>>().map { it.value }
-                return when(nodes.size) {
+                return when (nodes.size) {
                     2 -> {
                         val operator = nodes[0] as ANode.Terminal.Token<OpToken>
                         val factor = nodes[1] as Factor
-                        Result.success(Factor(Expr.UnaryOp(operator.value!!.token, factor.expr, operator.location!!), location))
+                        Result.success(
+                            Factor(
+                                Expr.UnaryOp(operator.value!!.token, factor.expr, operator.location!!),
+                                location
+                            )
+                        )
                     }
+
                     3 -> {
                         val expr = nodes[1] as Expr
                         Result.success(Factor(expr, location))
                     }
+
                     else -> {
                         ErrorOnElse(location)
                     }
                 }
             }
+
             is ANode.Terminal.Token<*> -> {
                 val expr: Expr? = when (val token = param.value!!.token) {
                     is StringLiteralToken -> {
                         Expr.StringLiteral(token, location)
                     }
+
                     is BooleanToken -> {
                         Expr.BooleanValue(token, location)
                     }
+
                     is NumberToken -> {
                         Expr.NumberValue(token, location)
                     }
+
                     is IdentifierToken -> {
                         Expr.SymbolName(token, location)
                     }
+
                     else -> {
                         null
                     }
@@ -168,14 +187,16 @@ class AFactor: ANode.Terminal.Rule<Factor>() {
                 } else {
                     return Result.success(Factor(expr, location))
                 }
-            } else -> {
+            }
+
+            else -> {
                 ErrorOnElse(location)
             }
         }
     }
 }
 
-class AArguments: ANode.Terminal.Rule<Arguments>() {
+class AArguments : ANode.Terminal.Rule<Arguments>() {
     override val pattern: ANode
         get() = AArgument() or AEps
 
@@ -191,15 +212,17 @@ class AArguments: ANode.Terminal.Rule<Arguments>() {
     }
 }
 
-class AArgument: ANode.Terminal.Rule<Argument>() {
+class AArgument : ANode.Terminal.Rule<Argument>() {
     override val pattern: ANode
         get() = AExpr().repeatable(REPEAT_CONDITION.ONE_AND_MORE).separatedBy(AComma())
 
     override fun onMatch(location: Location, vararg args: Any): Result<Argument> {
-       return when(args[0]) {
+        return when (args[0]) {
             AEps -> {
                 Result.failure(EpsError())
-            } else -> {
+            }
+
+            else -> {
                 val params = args.toList()
                 val exprs = params.map { (it as Expr) }
                 Result.success(Argument(exprs, location))
@@ -208,7 +231,7 @@ class AArgument: ANode.Terminal.Rule<Argument>() {
     }
 }
 
-class AFuncCall: ANode.Terminal.Rule<Expr.FuncCall>() {
+class AFuncCall : ANode.Terminal.Rule<Expr.FuncCall>() {
     override val pattern: ANode
         get() = AIdentifier().asParam() and ARoundBracketOpen() and AArguments() and ARoundBracketClose()
 
@@ -221,7 +244,7 @@ class AFuncCall: ANode.Terminal.Rule<Expr.FuncCall>() {
     }
 }
 
-class AProcCall(): ANode.Terminal.Rule<Stmt.ProcCall>() {
+class AProcCall() : ANode.Terminal.Rule<Stmt.ProcCall>() {
     override val pattern: ANode
         get() = AIdentifier().asParam() and ARoundBracketOpen() and AArguments() and ARoundBracketClose() and ASemicolon()
 
@@ -236,29 +259,33 @@ class AProcCall(): ANode.Terminal.Rule<Stmt.ProcCall>() {
     }
 }
 
-class AType(): ANode.Terminal.Rule<ArgType>() {
+class AType() : ANode.Terminal.Rule<ArgType>() {
     override val pattern: ANode
         get() = ANumberType().asParam() or ABooleanType().asParam() or AStringType().asParam()
 
     override fun onMatch(location: Location, vararg args: Any): Result<ArgType> {
         val token = args[0] as ANode.Terminal.Token<TypeToken>
-        return when(val type = token.value!!.token) {
+        return when (val type = token.value!!.token) {
             is StringTypeToken -> {
                 return Result.success(ArgType.StringType(location))
             }
+
             is NumberTypeToken -> {
                 return Result.success(ArgType.NumberType(location))
             }
+
             is BoolTypeToken -> {
                 return Result.success(ArgType.BooleanType(location))
-            } else -> {
+            }
+
+            else -> {
                 ErrorOnElse(location)
             }
         }
     }
 }
 
-class AParameters: ANode.Terminal.Rule<FunParameters>() {
+class AParameters : ANode.Terminal.Rule<FunParameters>() {
     override val pattern: ANode
         get() = (AIdentifier().asParam() and AColon() and AType()).asParam().repeatable(REPEAT_CONDITION.ONE_AND_MORE)
             .separatedBy(AComma()) or AEps.asParam()
@@ -268,6 +295,7 @@ class AParameters: ANode.Terminal.Rule<FunParameters>() {
             AEps -> {
                 return Result.success(FunParameters(emptyList(), location))
             }
+
             else -> {
                 val parameters = args.toList().map { list ->
                     when (list) {
@@ -278,6 +306,7 @@ class AParameters: ANode.Terminal.Rule<FunParameters>() {
                             val symbolName = Expr.SymbolName(id.value!!.token, id.location!!)
                             FunParameter(symbolName, type, list.location!!)
                         }
+
                         else -> {
                             return ErrorOnElse(location)
                         }
@@ -289,7 +318,7 @@ class AParameters: ANode.Terminal.Rule<FunParameters>() {
     }
 }
 
-class AReturnStatement: ANode.Terminal.Rule<Stmt.ReturnStatement>() {
+class AReturnStatement : ANode.Terminal.Rule<Stmt.ReturnStatement>() {
     override val pattern: ANode
         get() = AReturnKeyword() and AExpr() and ASemicolon()
 
@@ -299,15 +328,17 @@ class AReturnStatement: ANode.Terminal.Rule<Stmt.ReturnStatement>() {
     }
 }
 
-class AStatement: ANode.Terminal.Rule<Stmt>() {
+class AStatement : ANode.Terminal.Rule<Stmt>() {
     override val pattern: ANode
-        get() = AVarDeclaration() or AAssignment() or AIfStatement() or AWhileStatement() or ABlock() or APrintStatement() or  AFuncDeclaration() or AReturnStatement() or AProcDeclaration() or AProcCall()
+        get() = AVarDeclaration() or AAssignment() or AIfStatement() or AWhileStatement() or ABlock() or APrintStatement() or AFuncDeclaration() or AReturnStatement() or AProcDeclaration() or AProcCall()
 
     override fun onMatch(location: Location, vararg args: Any): Result<Stmt> {
-        return when(val value = args[0]) {
+        return when (val value = args[0]) {
             is Stmt -> {
                 return Result.success(value)
-            } else -> {
+            }
+
+            else -> {
                 ErrorOnElse(location)
             }
         }
@@ -315,7 +346,7 @@ class AStatement: ANode.Terminal.Rule<Stmt>() {
     }
 }
 
-class AVarDeclaration(): ANode.Terminal.Rule<Stmt.VarDeclaration>() {
+class AVarDeclaration() : ANode.Terminal.Rule<Stmt.VarDeclaration>() {
     override val pattern: ANode
         get() = AVar() and AIdentifier().asParam() and AAssign() and AExpr() and ASemicolon()
 
@@ -332,7 +363,7 @@ class AVarDeclaration(): ANode.Terminal.Rule<Stmt.VarDeclaration>() {
     }
 }
 
-class AStatementList: ANode.Terminal.Rule<StmtList>() {
+class AStatementList : ANode.Terminal.Rule<StmtList>() {
     override val pattern: ANode
         get() = AStatement().repeatable(REPEAT_CONDITION.ONE_AND_MORE) or AEps
 
@@ -342,9 +373,11 @@ class AStatementList: ANode.Terminal.Rule<StmtList>() {
                 is Stmt -> {
                     value
                 }
+
                 AEps -> {
                     return@mapNotNull null
                 }
+
                 else -> {
                     return ErrorOnElse(location)
                 }
@@ -356,16 +389,17 @@ class AStatementList: ANode.Terminal.Rule<StmtList>() {
 }
 
 
-class ABlock: ANode.Terminal.Rule<Stmt.Block>() {
+class ABlock : ANode.Terminal.Rule<Stmt.Block>() {
     override val pattern: ANode
         get() = ACurlyBracketOpen() and AStatementList() and ACurlyBracketClose()
 
     override fun onMatch(location: Location, vararg args: Any): Result<Stmt.Block> {
         val value = args[0]
-        return when(value) {
+        return when (value) {
             is StmtList -> {
                 return Result.success(Stmt.Block(value.list, location))
             }
+
             else -> {
                 ErrorOnElse(location)
             }
@@ -373,7 +407,7 @@ class ABlock: ANode.Terminal.Rule<Stmt.Block>() {
     }
 }
 
-class AFuncDeclaration(): ANode.Terminal.Rule<Stmt.FuncDeclaration>() {
+class AFuncDeclaration() : ANode.Terminal.Rule<Stmt.FuncDeclaration>() {
     override val pattern: ANode
         get() = AFuncKeyword() and AIdentifier().asParam() and ARoundBracketOpen() and AParameters() and ARoundBracketClose() and ABlock()
 
@@ -392,17 +426,19 @@ class AFuncDeclaration(): ANode.Terminal.Rule<Stmt.FuncDeclaration>() {
     }
 }
 
-class APrintStatement(): ANode.Terminal.Rule<Stmt.PrintStatement>() {
+class APrintStatement() : ANode.Terminal.Rule<Stmt.PrintStatement>() {
     override val pattern: ANode
         get() = APrintKeyword() and ARoundBracketOpen() and AExpr() and ARoundBracketClose() and ASemicolon()
 
 
     override fun onMatch(location: Location, vararg args: Any): Result<Stmt.PrintStatement> {
         val value = args.toList()[0]
-        return when(value) {
+        return when (value) {
             is Expr -> {
                 Result.success(Stmt.PrintStatement(value, location))
-            } else -> {
+            }
+
+            else -> {
                 ErrorOnElse(location)
             }
         }
@@ -410,28 +446,29 @@ class APrintStatement(): ANode.Terminal.Rule<Stmt.PrintStatement>() {
 }
 
 
-
-class AWhileStatement(): ANode.Terminal.Rule<Stmt.WhileStatement>() {
+class AWhileStatement() : ANode.Terminal.Rule<Stmt.WhileStatement>() {
     override val pattern: ANode
         get() = AWhileKeyword() and ARoundBracketOpen() and AExpr() and ARoundBracketClose() and ABlock()
 
 
     override fun onMatch(location: Location, vararg args: Any): Result<Stmt.WhileStatement> {
         val params = args.toList()
-        return when(params.size) {
+        return when (params.size) {
             2 -> {
                 val expr = params[0] as Expr
                 val block = params[1] as Stmt.Block
                 Result.success(Stmt.WhileStatement(expr, block, location))
             }
+
             else -> ErrorOnElse(location)
         }
     }
 }
 
-class AIfStatement(): ANode.Terminal.Rule<Stmt.IfStatement>() {
+class AIfStatement() : ANode.Terminal.Rule<Stmt.IfStatement>() {
     override val pattern: ANode
-        get() = AIfKeyword() and ARoundBracketOpen() and AExpr() and ARoundBracketClose() and ABlock() and (AElseKeyword() and ABlock()).asParam().optional() // DONE
+        get() = AIfKeyword() and ARoundBracketOpen() and AExpr() and ARoundBracketClose() and ABlock() and (AElseKeyword() and ABlock()).asParam()
+            .optional() // DONE
 
     override fun onMatch(location: Location, vararg args: Any): Result<Stmt.IfStatement> {
         val params = args.toList()
@@ -446,7 +483,7 @@ class AIfStatement(): ANode.Terminal.Rule<Stmt.IfStatement>() {
 }
 
 
-class AAssignment(): ANode.Terminal.Rule<Stmt.Assignment>() {
+class AAssignment() : ANode.Terminal.Rule<Stmt.Assignment>() {
     override val pattern: ANode
         get() = AIdentifier().asParam() and AAssign() and AExpr() and ASemicolon()
 
@@ -465,7 +502,7 @@ class AAssignment(): ANode.Terminal.Rule<Stmt.Assignment>() {
 }
 
 
-class AProcDeclaration(): ANode.Terminal.Rule<Stmt.ProcDeclaration>() {
+class AProcDeclaration() : ANode.Terminal.Rule<Stmt.ProcDeclaration>() {
     override val pattern: ANode
         get() = AProcKeyword() and AIdentifier().asParam() and ARoundBracketOpen() and AParameters() and ARoundBracketClose() and ABlock()
 
@@ -485,7 +522,7 @@ class AProcDeclaration(): ANode.Terminal.Rule<Stmt.ProcDeclaration>() {
 }
 
 
-class AProgram(): ANode.Terminal.Rule<Program>() {
+class AProgram() : ANode.Terminal.Rule<Program>() {
     override val pattern: ANode
         get() = AStatementList()
 

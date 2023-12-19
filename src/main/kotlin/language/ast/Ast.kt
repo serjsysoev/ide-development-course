@@ -1,5 +1,15 @@
 package language.ast
 
-//abstract class AstNode(val location: Location) {
-//    abstract fun accept(visitor: Visitor, symbolTables: SpaghettiStack<SymbolTable>): Any
-//}
+import language.lexer.tokenizer.Location
+
+interface ASTNode {
+    abstract val location: Location
+    abstract fun accept(visitor: Visitor)
+}
+
+
+class Visitor {
+    fun visit() {
+
+    }
+}
