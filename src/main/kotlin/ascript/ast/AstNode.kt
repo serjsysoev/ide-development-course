@@ -2,16 +2,14 @@ package ascript.ast
 
 import ascript.lexer.Tokenizer.*
 import language.ast.ASTNode
-import language.ast.Visitor
 import language.grammar.ANode
 import language.lexer.tokenizer.Location
 
 
 class StmtList(val list: List<Stmt>, override val location: Location): ASTNode {
-    override fun accept(visitor: Visitor) {
-        TODO("Not yet implemented")
+    override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+        return visitor.visit(this, context)
     }
-
 }
 
 sealed class Stmt: ASTNode {
@@ -20,8 +18,8 @@ sealed class Stmt: ASTNode {
         val expr: Expr,
         override val location: Location
     ) : Stmt() {
-        override fun accept(visitor: Visitor) {
-            TODO("Not yet implemented")
+        override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+            return visitor.visit(this, context)
         }
     }
 
@@ -31,8 +29,8 @@ sealed class Stmt: ASTNode {
         val expr: Expr,
         override val location: Location
     ) : Stmt() {
-        override fun accept(visitor: Visitor) {
-            TODO("Not yet implemented")
+        override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+            return visitor.visit(this, context)
         }
     }
 
@@ -43,8 +41,8 @@ sealed class Stmt: ASTNode {
         override val location: Location
 
     ) : Stmt() {
-        override fun accept(visitor: Visitor) {
-            TODO("Not yet implemented")
+        override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+            return visitor.visit(this, context)
         }
     }
 
@@ -53,8 +51,8 @@ sealed class Stmt: ASTNode {
         val block: Block,
         override val location: Location
     ) : Stmt() {
-        override fun accept(visitor: Visitor) {
-            TODO("Not yet implemented")
+        override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+            return visitor.visit(this, context)
         }
     }
 
@@ -62,8 +60,8 @@ sealed class Stmt: ASTNode {
         val statements: List<Stmt>,
         override val location: Location
     ) : Stmt() {
-        override fun accept(visitor: Visitor) {
-            TODO("Not yet implemented")
+        override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+            return visitor.visit(this, context)
         }
     }
 
@@ -71,8 +69,8 @@ sealed class Stmt: ASTNode {
         val expr: Expr,
         override val location: Location
     ) : Stmt() {
-        override fun accept(visitor: Visitor) {
-            TODO("Not yet implemented")
+        override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+            return visitor.visit(this, context)
         }
     }
 
@@ -83,8 +81,8 @@ sealed class Stmt: ASTNode {
         val block: Block,
         override val location: Location
     ) : Stmt() {
-        override fun accept(visitor: Visitor) {
-            TODO("Not yet implemented")
+        override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+            return visitor.visit(this, context)
         }
     }
 
@@ -92,8 +90,8 @@ sealed class Stmt: ASTNode {
         val expr: Expr,
         override val location: Location
     ) : Stmt() {
-        override fun accept(visitor: Visitor) {
-            TODO("Not yet implemented")
+        override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+            return visitor.visit(this, context)
         }
     }
 
@@ -103,8 +101,8 @@ sealed class Stmt: ASTNode {
         val block: Block,
         override val location: Location
     ) : Stmt() {
-        override fun accept(visitor: Visitor) {
-            TODO("Not yet implemented")
+        override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+            return visitor.visit(this, context)
         }
     }
 
@@ -113,27 +111,27 @@ sealed class Stmt: ASTNode {
         val arguments: List<Expr>,
         override val location: Location
     ) : Stmt() {
-        override fun accept(visitor: Visitor) {
-            TODO("Not yet implemented")
+        override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+            return visitor.visit(this, context)
         }
     }
 }
 sealed class ArgType: ASTNode {
     class BooleanType(override val location: Location): ArgType() {
-        override fun accept(visitor: Visitor) {
-            TODO("Not yet implemented")
+        override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+            return visitor.visit(this, context)
         }
     }
 
     class StringType(override val location: Location): ArgType() {
-        override fun accept(visitor: Visitor) {
-            TODO("Not yet implemented")
+        override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+            return visitor.visit(this, context)
         }
     }
 
     class NumberType(override val location: Location): ArgType() {
-        override fun accept(visitor: Visitor) {
-            TODO("Not yet implemented")
+        override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+            return visitor.visit(this, context)
         }
     }
 }
@@ -144,8 +142,8 @@ data class FunParameter(
     val type: ArgType,
     override val location: Location
 ) : ASTNode {
-    override fun accept(visitor: Visitor) {
-        TODO("Not yet implemented")
+    override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+        return visitor.visit(this, context)
     }
 }
 
@@ -153,39 +151,39 @@ data class Program(
     val statementList: StmtList,
     override val location: Location
 ) : ASTNode {
-    override fun accept(visitor: Visitor) {
-        TODO("Not yet implemented")
+    override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+        return visitor.visit(this, context)
     }
 }
 
 
 class Term(val expr: Expr, override val location: Location): ASTNode {
-    override fun accept(visitor: Visitor) {
-        TODO("Not yet implemented")
+    override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+        return visitor.visit(this, context)
     }
 }
 
 class Factor(val expr: Expr, override val location: Location) : ASTNode {
-    override fun accept(visitor: Visitor) {
-        TODO("Not yet implemented")
+    override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+        return visitor.visit(this, context)
     }
 }
 
 class Arguments(val arguments: Argument?, override val location: Location): ASTNode {
-    override fun accept(visitor: Visitor) {
-        TODO("Not yet implemented")
+    override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+        return visitor.visit(this, context)
     }
 }
 
 class Argument(val exprs: List<Expr>, override val location: Location): ASTNode {
-    override fun accept(visitor: Visitor) {
-        TODO("Not yet implemented")
+    override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+        return visitor.visit(this, context)
     }
 }
 
 class FunParameters(val parameter: List<FunParameter>, override val location: Location): ASTNode {
-    override fun accept(visitor: Visitor) {
-        TODO("Not yet implemented")
+    override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+        return visitor.visit(this, context)
     }
 }
 
@@ -194,8 +192,8 @@ sealed class Expr: ASTNode {
         val identifier: IdentifierToken,
         override val location: Location
     ) : Expr() {
-        override fun accept(visitor: Visitor) {
-            TODO("Not yet implemented")
+        override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+            return visitor.visit(this, context)
         }
     }
 
@@ -205,8 +203,8 @@ sealed class Expr: ASTNode {
         val opToken:  ANode.Terminal.Token<OpToken>,
         override val location: Location
     ): Expr() {
-        override fun accept(visitor: Visitor) {
-            TODO("Not yet implemented")
+        override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+            return visitor.visit(this, context)
         }
     }
 
@@ -214,8 +212,8 @@ sealed class Expr: ASTNode {
         val operation: OpToken, val expr: Expr,
         override val location: Location
     ): Expr() {
-        override fun accept(visitor: Visitor) {
-            TODO("Not yet implemented")
+        override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+            return visitor.visit(this, context)
         }
     }
 
@@ -224,8 +222,8 @@ sealed class Expr: ASTNode {
         val arguments: List<Expr>,
         override val location: Location
     ) : Expr() {
-        override fun accept(visitor: Visitor) {
-            TODO("Not yet implemented")
+        override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+            return visitor.visit(this, context)
         }
     }
 
@@ -234,8 +232,8 @@ sealed class Expr: ASTNode {
         val value: BooleanToken,
         override val location: Location
     ) : Expr() {
-        override fun accept(visitor: Visitor) {
-            TODO("Not yet implemented")
+        override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+            return visitor.visit(this, context)
         }
     }
 
@@ -244,8 +242,8 @@ sealed class Expr: ASTNode {
         val value: StringLiteralToken,
         override val location: Location
     ) : Expr() {
-        override fun accept(visitor: Visitor) {
-            TODO("Not yet implemented")
+        override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+            return visitor.visit(this, context)
         }
     }
 
@@ -253,8 +251,8 @@ sealed class Expr: ASTNode {
         val value: NumberToken,
         override val location: Location
     ) : Expr() {
-        override fun accept(visitor: Visitor) {
-            TODO("Not yet implemented")
+        override fun <T, R> accept(visitor: AstVisitor<T, R>, context: T) : R {
+            return visitor.visit(this, context)
         }
     }
 }

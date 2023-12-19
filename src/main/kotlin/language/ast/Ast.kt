@@ -1,15 +1,10 @@
 package language.ast
 
+import ascript.ast.AstVisitor
 import language.lexer.tokenizer.Location
 
 interface ASTNode {
-    abstract val location: Location
-    abstract fun accept(visitor: Visitor)
+    val location: Location
+    fun <T, R> accept(visitor: AstVisitor<T, R>, context: T): R
 }
 
-
-class Visitor {
-    fun visit() {
-
-    }
-}

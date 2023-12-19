@@ -13,8 +13,8 @@ fun <T : ANode> T.asParam(isParameter: Boolean = true): T {
 
 // extract rules and build ASTNode by parameters
 interface Rule<T : ASTNode> {
-    abstract val pattern: ANode
-    abstract fun onMatch(location: Location, vararg args: Any): Result<T>
+    val pattern: ANode
+    fun onMatch(location: Location, vararg args: Any): Result<T>
 
     fun onMatchWithParamResult(location: Location, vararg args: Any): Result<ANode.Terminal.ParamResult<T>> {
         return onMatch(location, *args).fold(
@@ -48,7 +48,7 @@ class ASTBuilder<T : ASTNode>(private val rule: Rule<T>, private val tokens: Lis
         return result.fold(
             onSuccess = { nodes ->
                 val args = nodes.filterIsInstance<ANode.Terminal.ParamResult<Any>>().map { it.value }
-                val paramRes = rule.onMatchWithParamResult(Location(start, curPos), *args.toTypedArray())
+                val paramRes = rule.onMatchWithParamResult(Location(start, maxOf(curPos - 1, 0)), *args.toTypedArray())
                 paramRes
             },
             onFailure = {
@@ -133,7 +133,7 @@ class ASTBuilder<T : ASTNode>(private val rule: Rule<T>, private val tokens: Lis
         }
         return Result.success(
             ANode.List.AndList(
-                nodes.filterIsInstance<ANode.Terminal.ParamResult<*>>().toMutableList(), Location(start, curPos)
+                nodes.filterIsInstance<ANode.Terminal.ParamResult<*>>().toMutableList(), Location(start, maxOf(0, curPos))
             )
         )
     }
