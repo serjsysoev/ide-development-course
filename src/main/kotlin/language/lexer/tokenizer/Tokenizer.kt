@@ -47,7 +47,6 @@ class Tokenizer(val input: CharSequence, private val parsers: List<TokenParser<o
 
          for (parser in parsers) {
 
-
              val result = parser.run { this@Tokenizer.parse() }
 
              if (result != null) {

@@ -108,16 +108,20 @@ fun BoxScope.EditorView(model: Editor, settings: Settings) = key(model) {
         editorState.rope.value,
         editorState.textSize,
         settings.fontSettings,
-        editorState.highlighter,
-        ) {
-        editorState.rerenderText(renderedText, settings.fontSettings, textMeasurer, previousRope)
+        editorState.highlighter.value,
+    ) {
+        withContext(Dispatchers.Default) {
+            editorState.rerenderText(renderedText, settings.fontSettings, textMeasurer, previousRope)
+        }
     }
 
     LaunchedEffect(
         editorState.rope.value,
         editorState.file.value
         ) {
-        editorState.updateHighlighting(previousRope, editorState.file)
+        withContext(Dispatchers.Default) {
+            editorState.updateHighlighting()
+        }
     }
 
     LaunchedEffect(editorState.isCursorVisible.value) { // TODO: documentation explicitly tells not to do that
@@ -162,9 +166,18 @@ fun BoxScope.EditorView(model: Editor, settings: Settings) = key(model) {
                 topLeft = editorState.codeToViewport(cursorPosition.codePosition),
                 size = Size(1f, textSize.height),
             )
+
         }
 
         drawGutter(settings.fontSettings, textSize, verticalOffset, textMeasurer, editorState.rope.value.lineCount)
+
+        val cursorPosition = editorState.cursorPosition.value
+        val x = cursorPosition.codePosition.x
+        val y = cursorPosition.codePosition.y
+        val offset = editorState.rope.value.curOffset(cursorPosition.codePosition)
+
+        val pos = renderedText.value?.to ?: 0
+        drawText(textMeasurer, buildAnnotatedString { this.pushStyle(SpanStyle(Color(0xFFEBC88E))); this.append("x: $x, y: $y | Offset: $offset")}, topLeft = editorState.codeToViewport(CodePosition(0, pos)))
     }
 
     LaunchedEffect(Unit) {
@@ -326,30 +339,22 @@ private fun EditorState.initVerticalScrollState() = rememberScrollableState { de
     scrollConsumed
 }
 
-private suspend fun EditorState.updateHighlighting(
-    previousRope: MutableState<Rope<LineMetrics>?>,
-    file: MutableState<File>,
-) : Unit = withContext(Dispatchers.Default) {
+private suspend fun EditorState.updateHighlighting() : Unit {
+    val highlightingBuilder = HighlightingBuilders.firstOrNull { builder -> builder.language.fileExtension == file.value.extension } ?: return
 
-    delay(100)
-    highlighter.value = null
-
-
-    val highlightingBuilder = HighlightingBuilders.firstOrNull { builder -> builder.language.fileExtension == file.value.extension } ?: return@withContext
-
-    val rope = previousRope.value
-
-    val stringBuilder = StringBuilder()
-    stringBuilder.append(rope)
+    val rope = this.rope.value
 
     try {
-        val tokens = highlightingBuilder.tokenize(stringBuilder)
+        val tokens = highlightingBuilder.tokenize(rope.toString())
+        HighlightingLogger.log.info(tokens.toString())
         val ast = highlightingBuilder.buildAst(tokens).getOrThrow()
         val htokens = highlightingBuilder.buildHighlighting(ast, tokens)
-        highlighter.value = Highlighter(htokens)
+        HighlightingLogger.log.info(htokens.toString())
+        val newHighlighter = Highlighter(htokens)
+        this.highlighter.value = newHighlighter
     } catch (e: Throwable) {
         HighlightingLogger.log.info(e.message)
-        return@withContext
+        return
     }
 }
 
@@ -359,7 +364,7 @@ private suspend fun EditorState.rerenderText(
     settings: FontSettings,
     textMeasurer: TextMeasurer,
     previousRope: MutableState<Rope<LineMetrics>?>,
-): Unit = withContext(Dispatchers.Default) {
+): Unit {
     val text = renderedText.value
     val verticalOffset = verticalScrollOffset.value
     val canvasSize = canvasSize.value
@@ -447,13 +452,10 @@ private fun TextMeasurer.layoutLines(
 ): RenderedText {
     val builder = AnnotatedString.Builder()
 
-    val highlighter = prevHighlighter
-
     val startOffset = rope.getIndexOfKthLine(from)
-    val endOffset = maxOf(0, rope.getIndexOfKthLine(to + 1) - 1)
+    val endOffset = maxOf(0, rope.getIndexOfKthLine(to))
 
-    val styles = highlighter?.highlightRange(startOffset, endOffset)
-
+    val styles = prevHighlighter?.highlightRange(startOffset, endOffset)
 
     val text = rope.getLines(from, to)
 
@@ -470,8 +472,15 @@ private fun TextMeasurer.layoutLines(
         builder.toAnnotatedString(),
         getTextStyle(settings),
     )
+
     return RenderedText(textLayoutResult, from, to, settings.fontSize)
 }
 
 internal fun getTextStyle(settings: FontSettings) =
     TextStyle(fontFamily = settings.fontFamily, fontSize = settings.fontSize)
+
+
+
+internal fun Rope<LineMetrics>.curOffset(pos: CodePosition): Int {
+    return this.getIndexOfKthLine(pos.y) + pos.x
+}

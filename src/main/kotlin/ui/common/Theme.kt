@@ -37,7 +37,7 @@ object AppTheme {
         val keyword: SpanStyle = SpanStyle(Color(0xFF82D1CD))
         val type: SpanStyle = SpanStyle(Color(0xFF79ADE3))
         val annotation: SpanStyle = SpanStyle(Color(0xFFBBB529))
-        val blockBrackets: SpanStyle = SpanStyle(Color(0xD1D1D1))
+        val blockBrackets: SpanStyle = SpanStyle(Color(0xFFEBC88E))
         val symbolName: SpanStyle = SpanStyle(Color(0xFFAF9CFF))
     }
 

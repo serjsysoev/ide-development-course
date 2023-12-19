@@ -526,7 +526,8 @@ class AProgram() : ANode.Terminal.Rule<Program>() {
     override val pattern: ANode
         get() = AStatementList()
 
-    override fun onMatch(location: Location, vararg args: Any): Result<Program> { val params = args.toList()
+    override fun onMatch(location: Location, vararg args: Any): Result<Program> {
+        val params = args.toList()
         if (params.size != 1) {
             return ErrorOnElse(location)
         }
