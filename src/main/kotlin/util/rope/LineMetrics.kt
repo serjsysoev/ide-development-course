@@ -57,6 +57,7 @@ data class LineWithBreaks(val leftLineLength: Int, val maxInnerLineLength: Int, 
     LineLengthMetric()
 
 fun Rope<LineMetrics>.getLines(from: Int, to: Int): String {
+    this.lineCount
     return getLinesRope(from, to).toString()
 }
 

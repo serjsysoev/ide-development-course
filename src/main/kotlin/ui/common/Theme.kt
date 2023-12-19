@@ -33,11 +33,12 @@ object AppTheme {
 
     object code {
         val simple: SpanStyle = SpanStyle(Color(0xFFD1D1D1))
-        val value: SpanStyle = SpanStyle(Color(0xFF6897BB))
-        val keyword: SpanStyle = SpanStyle(Color(0xFFCC7832))
-        val punctuation: SpanStyle = SpanStyle(Color(0xFFA1C17E))
+        val value: SpanStyle = SpanStyle(Color(0xFFEBC88E))
+        val keyword: SpanStyle = SpanStyle(Color(0xFF82D1CD))
+        val type: SpanStyle = SpanStyle(Color(0xFF79ADE3))
         val annotation: SpanStyle = SpanStyle(Color(0xFFBBB529))
-        val comment: SpanStyle = SpanStyle(Color(0xFF808080))
+        val blockBrackets: SpanStyle = SpanStyle(Color(0xD1D1D1))
+        val symbolName: SpanStyle = SpanStyle(Color(0xFFAF9CFF))
     }
 
     object icons {

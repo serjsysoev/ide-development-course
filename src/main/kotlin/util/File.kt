@@ -13,6 +13,7 @@ interface File {
     val children: List<File>
     val hasChildren: Boolean
     val absolutePath: String
+    val extension: String?
     fun read(): Rope<LineMetrics>
 }
 
@@ -31,6 +32,9 @@ fun java.io.File.toProjectFile(): File = object : File {
             .listFiles { _, name -> !name.startsWith(".") }
             .orEmpty()
             .map { it.toProjectFile() }
+
+    override val extension: String?
+        get() = this@toProjectFile.extension.ifEmpty { null }
 
     private val numberOfFiles
         get() = listFiles()?.size ?: 0

@@ -5,6 +5,6 @@ import language.lexer.tokenizer.Location
 
 interface ASTNode {
     val location: Location
-    fun <T, R> accept(visitor: AstVisitor<T, R>, context: T): R
+    fun <T: Any?, R> accept(visitor: AstVisitor<T, R>, context: T): R
 }
 

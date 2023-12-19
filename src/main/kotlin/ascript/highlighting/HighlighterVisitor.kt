@@ -1,11 +1,14 @@
 package ascript.highlighting
 
+import androidx.compose.ui.text.SpanStyle
 import ascript.ast.*
 import language.lexer.tokenizer.ConcreteToken
 import language.lexer.tokenizer.Token
+import ui.common.AppTheme
+import ui.common.AppTheme.code.simple
 
-sealed class HighlightElement {
-    sealed class Keyword: HighlightElement()  {
+sealed class HighlightElement(val color: SpanStyle) {
+    sealed class Keyword(color: SpanStyle = AppTheme.code.keyword): HighlightElement(color)  {
         object Var: Keyword()
         object If: Keyword()
         object While: Keyword()
@@ -15,25 +18,27 @@ sealed class HighlightElement {
         object Proc: Keyword()
     }
 
-    sealed class Type: HighlightElement() {
+    sealed class Type: HighlightElement(AppTheme.code.type) {
         object BoolType: Type()
         object StringType: Type()
         object NumberType: Type()
     }
 
-    class SymbolName(val name: String): HighlightElement()
+    class SymbolName(): HighlightElement(AppTheme.code.symbolName)
 
-    object Operator: HighlightElement()
+    object Operator: HighlightElement(AppTheme.code.type)
 
-    sealed class Value: HighlightElement() {
+    sealed class Value: HighlightElement(AppTheme.code.value) {
         object BooleanValue: Value()
         object NumberValue: Value()
         object StringLiteral: Value()
     }
 
-    sealed class Markup: HighlightElement() {
+    sealed class Markup: HighlightElement(AppTheme.code.blockBrackets) {
         object Bracket: Markup()
     }
+
+    object Other: HighlightElement(simple)
 }
 
 
@@ -41,7 +46,11 @@ sealed class HighlightElement {
 data class HToken(val concreteToken: ConcreteToken<out Token>, val element: HighlightElement)
 
 
-class HighlighterVisitor(val tokens: List<ConcreteToken<Token>>): AstVisitor<Any, MutableList<HToken>> {
+class HighlighterVisitor(val tokens: List<ConcreteToken<out Token>>, val ast: Program): AstVisitor<Any, MutableList<HToken>> {
+    fun generateHighlighing() : List<HToken> {
+        return ast.accept(this, 1)
+    }
+
     override fun visit(node: StmtList, context: Any): MutableList<HToken> {
         val elements: MutableList<HToken> = mutableListOf()
 
@@ -227,8 +236,9 @@ class HighlighterVisitor(val tokens: List<ConcreteToken<Token>>): AstVisitor<Any
 
     override fun visit(node: Expr.SymbolName, context: Any): MutableList<HToken> {
         val elements: MutableList<HToken> = mutableListOf()
+        node.identifier
         val symbolToken = tokens[node.location.startOffset]
-        elements.add(HToken(symbolToken, HighlightElement.SymbolName(node.identifier.value)))
+        elements.add(HToken(symbolToken, HighlightElement.SymbolName()))
         return elements
     }
 
