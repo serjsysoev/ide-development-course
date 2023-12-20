@@ -101,6 +101,7 @@ fun BoxScope.EditorView(model: Editor, settings: Settings) = key(model) {
 
     val renderedText = remember { mutableStateOf<RenderedText?>(null) }
     val previousRope = remember { mutableStateOf<Rope<LineMetrics>?>(null) }
+    val previousFile = remember { mutableStateOf(editorState.file.value) }
 
     LaunchedEffect(
         editorState.verticalScrollOffset.value,
@@ -111,7 +112,7 @@ fun BoxScope.EditorView(model: Editor, settings: Settings) = key(model) {
         editorState.file.value
     ) {
         withContext(Dispatchers.Default) {
-            val needToUpdateHighlighting = editorState.rope.value != previousRope.value
+            val needToUpdateHighlighting = editorState.rope.value != previousRope.value || previousFile.value != editorState.file.value
             editorState.rerenderText(renderedText, settings.fontSettings, textMeasurer, previousRope, editorState.highlighter)
 
             if (needToUpdateHighlighting) {

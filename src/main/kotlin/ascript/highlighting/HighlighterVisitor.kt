@@ -193,13 +193,7 @@ class HighlighterVisitor(val tokens: List<ConcreteToken<out Token>>, val ast: Pr
     }
 
     override fun visit(node: Program, context: Any): MutableList<HToken> {
-        val elements: MutableList<HToken> = mutableListOf()
-
-        node.statementList.list.forEach {
-            elements.addAll(it.accept(this, context))
-        }
-
-        return elements
+        return node.statementList.accept(this, context)
     }
 
     override fun visit(node: Factor, context: Any): MutableList<HToken> {
@@ -236,8 +230,7 @@ class HighlighterVisitor(val tokens: List<ConcreteToken<out Token>>, val ast: Pr
 
     override fun visit(node: Expr.SymbolName, context: Any): MutableList<HToken> {
         val elements: MutableList<HToken> = mutableListOf()
-        node.identifier
-        val symbolToken = tokens[node.location.startOffset]
+        val symbolToken = ConcreteToken(node.identifier, node.location)
         elements.add(HToken(symbolToken, HighlightElement.SymbolName()))
         return elements
     }

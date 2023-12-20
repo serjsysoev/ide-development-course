@@ -175,7 +175,7 @@ class AFactor : ANode.Terminal.Rule<Factor>() {
                     }
 
                     is IdentifierToken -> {
-                        Expr.SymbolName(token, location)
+                        Expr.SymbolName(token, param.value!!.location)
                     }
 
                     else -> {

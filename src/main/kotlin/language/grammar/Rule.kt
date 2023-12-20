@@ -42,7 +42,6 @@ class ASTBuilder<T : ASTNode>(private val rule: Rule<T>, private val tokens: Lis
 
     private fun processRule(rule: Rule<*>): Result<ANode.Terminal.ParamResult<*>> {
         val start = curPos
-        val startOffset = currentOffset()
         val result = processNodes(rule.pattern)
 
         return result.fold(
