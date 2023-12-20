@@ -8,7 +8,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
-import backend.Workspace
+import frontend.Workspace
+import io.github.irgaly.kfswatch.KfsDirectoryWatcher
+import io.github.irgaly.kfswatch.KfsEvent
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import ui.CodeViewer
 import ui.CodeViewerView
 import ui.WorkspacesViewerView
@@ -27,17 +33,16 @@ sealed class BaseView {
 fun main() = application {
     val workspacesViewer = BaseView.WorkspacesViewer(mutableListOf())
 
-    val baseViewState: MutableState<BaseView> = remember { mutableStateOf(workspacesViewer) }
-
+    val mainView: MutableState<BaseView> = remember { mutableStateOf(workspacesViewer) }
 
     Window(
         onCloseRequest = {
-            when (baseViewState.value) {
+            when (mainView.value) {
                 is BaseView.WorkspacesViewer -> {
                     exitApplication()
                 }
                 is BaseView.CodeViewer -> {
-                    baseViewState.value = workspacesViewer
+                    mainView.value = workspacesViewer
                 }
             }
         },
@@ -49,19 +54,41 @@ fun main() = application {
                 colors = AppTheme.colors.background.material
             ) {
                 Surface {
-                    when (val view = baseViewState.value) {
+                    when (val view = mainView.value) {
                         is BaseView.WorkspacesViewer -> {
-                            WorkspacesViewerView(workspacesViewer, baseViewState)
+                            WorkspacesViewerView(workspacesViewer, mainView)
                         }
                         is BaseView.CodeViewer -> {
+
                             val codeViewer = remember {
                                 CodeViewer(
                                     workspace = view.workspace,
                                     editors = view.workspace.editors,
-                                    fileTree = FileTree(view.workspace.file, view.workspace.editors),
+                                    fileTree = mutableStateOf(FileTree(view.workspace.file, view.workspace.editors)),
                                     settings = Settings()
                                 )
                             }
+
+                            val fileWatcher = KfsDirectoryWatcher (
+                                scope = codeViewer.lifeTime,
+                                dispatcher = Dispatchers.IO,
+                                rawEventEnabled = false,
+                            )
+                            runBlocking {
+                                fileWatcher.add(view.workspace.file.absolutePath)
+                            }
+
+                            runBlocking {
+                                codeViewer.lifeTime.launch(Dispatchers.Default) {
+                                    fileWatcher.onEventFlow.filter {
+                                        it.event in listOf(KfsEvent.Create, KfsEvent.Delete)
+                                    }.collect {
+                                        codeViewer.fileTree.value =
+                                            FileTree(view.workspace.file, view.workspace.editors)
+                                    }
+                                }
+                            }
+
 
                             CodeViewerView(codeViewer)
                         }

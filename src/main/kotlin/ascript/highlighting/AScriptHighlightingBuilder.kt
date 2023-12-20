@@ -4,7 +4,7 @@ import ascript.AScript
 import ascript.ast.Program
 import ascript.grammar.AProgram
 import ascript.lexer.AScriptLexer
-import backend.HighlightingBuilder
+import frontend.HighlightingBuilder
 import language.ast.ASTNode
 import language.grammar.ASTBuilder
 import language.lexer.tokenizer.ConcreteToken

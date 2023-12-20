@@ -1,13 +1,15 @@
 package ui
 
-import backend.Workspace
+import androidx.compose.runtime.MutableState
+import kotlinx.coroutines.CoroutineScope
 import ui.common.Settings
 import ui.editor.Editors
 import ui.filetree.FileTree
+import kotlin.coroutines.EmptyCoroutineContext
 
 class CodeViewer(
-    val workspace: Workspace,
     val editors: Editors,
-    val fileTree: FileTree,
-    val settings: Settings
+    val fileTree: MutableState<FileTree>,
+    val settings: Settings,
+    val lifeTime: CoroutineScope = CoroutineScope(EmptyCoroutineContext)
 )

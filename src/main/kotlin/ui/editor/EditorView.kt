@@ -32,8 +32,8 @@ import androidx.compose.ui.text.platform.FontLoadResult
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import backend.HighlightingBuilder
-import backend.HighlightingBuilders
+import frontend.HighlightingBuilder
+import frontend.HighlightingBuilders
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext

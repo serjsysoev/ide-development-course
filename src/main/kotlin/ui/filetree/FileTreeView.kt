@@ -16,6 +16,7 @@ import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -47,9 +48,10 @@ fun FileTreeViewTabView() = Surface {
 }
 
 @Composable
-fun FileTreeView(model: FileTree) = Surface(
+fun FileTreeView(fileTree: MutableState<FileTree>) = Surface(
     modifier = Modifier.fillMaxSize()
 ) {
+    val model = remember { fileTree }
     with(LocalDensity.current) {
         Box {
             val scrollState = rememberLazyListState()
@@ -58,8 +60,8 @@ fun FileTreeView(model: FileTree) = Surface(
                 modifier = Modifier.fillMaxSize().withoutWidthConstraints(),
                 state = scrollState
             ) {
-                items(model.nodes.size) {
-                    FileTreeItemView(14.sp, 14.sp.toDp() * 1.5f, model.nodes[it])
+                items(model.value.nodes.size) {
+                    FileTreeItemView(14.sp, 14.sp.toDp() * 1.5f, model.value.nodes[it])
                 }
             }
 

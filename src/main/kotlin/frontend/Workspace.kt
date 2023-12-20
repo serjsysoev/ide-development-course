@@ -1,4 +1,4 @@
-package backend
+package frontend
 
 import kotlinx.serialization.Serializable
 import ui.editor.Editors

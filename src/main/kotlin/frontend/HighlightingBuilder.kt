@@ -1,4 +1,4 @@
-package backend
+package frontend
 
 import ascript.highlighting.AScriptHighlightingBuilder
 import ascript.highlighting.HToken
