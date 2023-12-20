@@ -62,7 +62,6 @@ fun main() = application {
 
                             val codeViewer = remember {
                                 CodeViewer(
-                                    workspace = view.workspace,
                                     editors = view.workspace.editors,
                                     fileTree = mutableStateOf(FileTree(view.workspace.file, view.workspace.editors)),
                                     settings = Settings()
@@ -88,8 +87,6 @@ fun main() = application {
                                     }
                                 }
                             }
-
-
                             CodeViewerView(codeViewer)
                         }
                     }

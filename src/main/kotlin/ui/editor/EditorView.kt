@@ -38,6 +38,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.jetbrains.skia.Font
+import ui.CodeViewer
 import ui.common.AppTheme
 import ui.common.FontSettings
 import ui.common.Settings
@@ -77,7 +78,7 @@ internal data class EditorState(
 )
 
 @Composable
-fun BoxScope.EditorView(model: Editor, settings: Settings) = key(model) {
+fun BoxScope.EditorView(model: Editor, settings: Settings, codeViewer: CodeViewer) = key(model) {
     val textMeasurer = rememberTextMeasurer()
     val fontFamilyResolver = LocalFontFamilyResolver.current
 
@@ -137,7 +138,7 @@ fun BoxScope.EditorView(model: Editor, settings: Settings) = key(model) {
         .focusRequester(requester)
         .focusable()
         .onSizeChanged { editorState.canvasSize.value = it }
-        .keyboardInput(editorState, LocalClipboardManager.current)
+        .keyboardInput(editorState, LocalClipboardManager.current, codeViewer)
         .pointerInput(editorState)
         .scrollable(verticalScrollState, Orientation.Vertical)
         .scrollable(horizontalScrollState, Orientation.Horizontal)
@@ -193,19 +194,19 @@ private fun DrawScope.drawSelection(editorState: EditorState) {
         drawRect(
             topLeft = editorState.codeToViewport(startPosition),
             size = Size((endPosition.x - startPosition.x) * textSize.width, textSize.height),
-            color = AppTheme.colors.code.selection,
+            color = AppTheme.code.selection,
         )
     } else {
         drawRect(
             topLeft = editorState.codeToViewport(startPosition),
             size = Size(size.width, textSize.height),
-            color = AppTheme.colors.code.selection,
+            color = AppTheme.code.selection,
         )
         for (lineNumber in startPosition.y + 1 until endPosition.y) {
             drawRect(
                 topLeft = editorState.codeToViewport(CodePosition(0, lineNumber)),
                 size = Size(size.width, textSize.height),
-                color = AppTheme.colors.code.selection,
+                color = AppTheme.code.selection,
             )
 
         }
@@ -213,7 +214,7 @@ private fun DrawScope.drawSelection(editorState: EditorState) {
         drawRect(
             topLeft = Offset(EDITOR_TEXT_OFFSET * textSize.width, y),
             size = Size(x - EDITOR_TEXT_OFFSET * textSize.width, textSize.height),
-            color = AppTheme.colors.code.selection,
+            color = AppTheme.code.selection,
         )
     }
 }

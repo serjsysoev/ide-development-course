@@ -10,8 +10,13 @@ import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.text.AnnotatedString
+import kotlinx.coroutines.*
+import ui.CodeViewer
+import ui.Notification
+import ui.common.AppTheme
 import util.rope.lineCount
 import util.rope.lineLength
+import java.io.File
 import kotlin.math.min
 import java.awt.event.KeyEvent as AwtKeyEvent
 
@@ -51,7 +56,8 @@ private fun EditorState.setCursorByCodePosition(offset: Offset): CursorPosition 
     return CursorPosition(CodePosition(newX, newY), newX)
 }
 
-internal fun Modifier.keyboardInput(editorState: EditorState, clipboardManager: ClipboardManager): Modifier =
+@OptIn(DelicateCoroutinesApi::class)
+internal fun Modifier.keyboardInput(editorState: EditorState, clipboardManager: ClipboardManager, codeViewer: CodeViewer): Modifier =
     onKeyEvent { keyEvent ->
         keyEvent.awtEventOrNull?.let { awtEvent ->
             if (awtEvent.id == AwtKeyEvent.KEY_TYPED) {
@@ -176,6 +182,33 @@ internal fun Modifier.keyboardInput(editorState: EditorState, clipboardManager: 
                     || (keyEvent.isCtrlPressed && !keyEvent.isCtrlPressed && !keyEvent.isAltPressed && !keyEvent.isShiftPressed)
                 ) {
                     editorState.copySelection(clipboardManager)
+                }
+            }
+            Key.S -> {
+                if ((keyEvent.isMetaPressed && !keyEvent.isCtrlPressed && !keyEvent.isAltPressed && !keyEvent.isShiftPressed)
+                    || (keyEvent.isCtrlPressed && !keyEvent.isCtrlPressed && !keyEvent.isAltPressed && !keyEvent.isShiftPressed)
+                ) {
+                    GlobalScope.launch(Dispatchers.Default) {
+                        val filename = editorState.file.value.absolutePath
+                        val file = File(filename)
+                        val (text, color) = if (file.canWrite()) {
+                            file.writeText(editorState.rope.value.toString())
+                            "File is saved" to AppTheme.colors.state.success
+                        } else {
+                            "Error. File is not writable." to AppTheme.colors.state.fail
+                        }
+                        println("Save")
+                        val notify = Notification(text, color)
+                        if (codeViewer.notification.value != notify) {
+                            codeViewer.notification.value = notify
+                        }
+
+                        delay(4000)
+
+                        if (codeViewer.notification.value == notify) {
+                            codeViewer.notification.value = null
+                        }
+                    }
                 }
             }
 

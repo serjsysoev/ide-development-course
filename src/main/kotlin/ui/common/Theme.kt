@@ -2,6 +2,8 @@ package ui.common
 
 import androidx.compose.material.darkColors
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Circle
+import androidx.compose.material.icons.outlined.CircleNotifications
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
@@ -22,16 +24,21 @@ object AppTheme {
             )
         }
 
-        object font {
-            val grayLight: Color = Color(0xFF767676)
+        object state {
+            val fail: Color = Color(0xFFBF3131)
+            val success: Color = Color(0xFF4E9F3D)
         }
 
-        object code {
-            val selection: Color = Color(0xFF173764)
+
+        object font {
+            val grayLight: Color = Color(0xFF767676)
+            val mainLight: Color = Color(0xFFD1D1D1)
         }
+
     }
 
     object code {
+        val selection: Color = Color(0xFF173764)
         val simple: SpanStyle = SpanStyle(Color(0xFFD1D1D1))
         val value: SpanStyle = SpanStyle(Color(0xFFEBC88E))
         val keyword: SpanStyle = SpanStyle(Color(0xFF82D1CD))
@@ -43,6 +50,8 @@ object AppTheme {
 
     object icons {
         val Delete = Icons.Outlined.Close
+        val Notification = Icons.Outlined.CircleNotifications
+        val Circle = Icons.Default.Circle
     }
 
     object fontSize {
