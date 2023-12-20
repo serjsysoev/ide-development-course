@@ -437,7 +437,6 @@ class APrintStatement() : ANode.Terminal.Rule<Stmt.PrintStatement>() {
             is Expr -> {
                 Result.success(Stmt.PrintStatement(value, location))
             }
-
             else -> {
                 ErrorOnElse(location)
             }

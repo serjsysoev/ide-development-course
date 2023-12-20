@@ -26,7 +26,7 @@ sealed class HighlightElement(val color: SpanStyle) {
 
     class SymbolName(): HighlightElement(AppTheme.code.symbolName)
 
-    object Operator: HighlightElement(AppTheme.code.type)
+    object Operator: HighlightElement(AppTheme.code.simple)
 
     sealed class Value: HighlightElement(AppTheme.code.value) {
         object BooleanValue: Value()

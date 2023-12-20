@@ -73,7 +73,7 @@ internal data class EditorState(
     val selectionStart: MutableState<CodePosition?>,
     val textSize: Size,
     val file: MutableState<File>,
-    val highlighter: MutableState<Highlighter?>
+    var highlighter: Highlighter?
 )
 
 @Composable
@@ -93,7 +93,7 @@ fun BoxScope.EditorView(model: Editor, settings: Settings) = key(model) {
         textSize = remember(settings.fontSettings) {
             getTextSize(fontFamilyResolver, textMeasurer, settings.fontSettings)
         },
-        highlighter = remember { mutableStateOf(null) }
+        highlighter = null
     )
 
     val verticalScrollState = editorState.initVerticalScrollState()
@@ -108,19 +108,16 @@ fun BoxScope.EditorView(model: Editor, settings: Settings) = key(model) {
         editorState.rope.value,
         editorState.textSize,
         settings.fontSettings,
-        editorState.highlighter.value,
+        editorState.file.value
     ) {
         withContext(Dispatchers.Default) {
-            editorState.rerenderText(renderedText, settings.fontSettings, textMeasurer, previousRope)
-        }
-    }
+            val needToUpdateHighlighting = editorState.rope.value != previousRope.value
+            editorState.rerenderText(renderedText, settings.fontSettings, textMeasurer, previousRope, editorState.highlighter)
 
-    LaunchedEffect(
-        editorState.rope.value,
-        editorState.file.value
-        ) {
-        withContext(Dispatchers.Default) {
-            editorState.updateHighlighting()
+            if (needToUpdateHighlighting) {
+                editorState.highlighter = calculateHighlighting(editorState.file.value, editorState.rope.value)
+                editorState.rerenderText(renderedText, settings.fontSettings, textMeasurer, previousRope, editorState.highlighter, forceUpdate = true)
+            }
         }
     }
 
@@ -339,22 +336,20 @@ private fun EditorState.initVerticalScrollState() = rememberScrollableState { de
     scrollConsumed
 }
 
-private suspend fun EditorState.updateHighlighting() : Unit {
-    val highlightingBuilder = HighlightingBuilders.firstOrNull { builder -> builder.language.fileExtension == file.value.extension } ?: return
-
-    val rope = this.rope.value
-
+private fun calculateHighlighting(file: File, rope: Rope<LineMetrics>?) : Highlighter? {
+    val highlightingBuilder = HighlightingBuilders.firstOrNull { builder -> builder.language.fileExtension == file.extension } ?: return null
     try {
         val tokens = highlightingBuilder.tokenize(rope.toString())
-        HighlightingLogger.log.info(tokens.toString())
+        HighlightingLogger.log.info("TOKENS: " + tokens.toString())
         val ast = highlightingBuilder.buildAst(tokens).getOrThrow()
+        HighlightingLogger.log.info("AST: " + ast.toString())
         val htokens = highlightingBuilder.buildHighlighting(ast, tokens)
-        HighlightingLogger.log.info(htokens.toString())
+        HighlightingLogger.log.info("HTOKENS: " + htokens.toString())
         val newHighlighter = Highlighter(htokens)
-        this.highlighter.value = newHighlighter
+        return newHighlighter
     } catch (e: Throwable) {
         HighlightingLogger.log.info(e.message)
-        return
+        return null
     }
 }
 
@@ -364,6 +359,8 @@ private suspend fun EditorState.rerenderText(
     settings: FontSettings,
     textMeasurer: TextMeasurer,
     previousRope: MutableState<Rope<LineMetrics>?>,
+    highlighter: Highlighter?,
+    forceUpdate: Boolean = false
 ): Unit {
     val text = renderedText.value
     val verticalOffset = verticalScrollOffset.value
@@ -375,6 +372,7 @@ private suspend fun EditorState.rerenderText(
                 && verticalOffset - text.from * textSize.height < canvasSize.height / 2)
         || (text.to < rope.value.lineCount
                 && text.to * textSize.height - verticalOffset - canvasSize.height < canvasSize.height / 2)
+        || forceUpdate
     ) {
         previousRope.value = rope.value
         val from = floor((verticalOffset - canvasSize.height) / textSize.height).toInt()
@@ -383,7 +381,7 @@ private suspend fun EditorState.rerenderText(
             .coerceAtMost(rope.value.lineCount)
 
         EditorView.log.info("Relayout from $from to $to")
-        renderedText.value = textMeasurer.layoutLines(rope.value, from, to, settings, highlighter.value)
+        renderedText.value = textMeasurer.layoutLines(rope.value, from, to, settings, highlighter)
         // in case text size has changed we want to maintain correct verticalScrollOffset
         verticalScrollOffset.value = coerceVerticalOffset(verticalScrollOffset.value)
     }
@@ -448,22 +446,18 @@ private fun TextMeasurer.layoutLines(
     from: Int,
     to: Int,
     settings: FontSettings,
-    prevHighlighter: Highlighter?
+    curHighlighter: Highlighter?
 ): RenderedText {
     val builder = AnnotatedString.Builder()
 
     val startOffset = rope.getIndexOfKthLine(from)
     val endOffset = maxOf(0, rope.getIndexOfKthLine(to))
-
-    val styles = prevHighlighter?.highlightRange(startOffset, endOffset)
-
+    val styles = curHighlighter?.highlightRange(startOffset, endOffset)
     val text = rope.getLines(from, to)
-
     builder.append(text)
 
 
     builder.addStyle(AppTheme.code.simple, 0, text.length)
-
     styles?.forEach {
         builder.addStyle(it.style, it.startOffset, it.endOffset)
     }
