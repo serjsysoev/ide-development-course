@@ -54,13 +54,11 @@ class AExpr() : ANode.Terminal.Rule<Expr>() {
                         or (ATerm() and AStringConcatOp().asParam() and AExpr()).asParam()
                         or (ATerm() and AOrOp().asParam() and AExpr()).asParam()
                         or ATerm()
-                        or (AExpr() and ARelationOp().asParam() and AExpr()).asParam()
+                        or (ATerm() and ARelationOp().asParam() and AExpr()).asParam()
                 )
 
     override fun onMatch(location: Location, vararg args: Any): Result<Expr> {
-        val param = args.toList()[0]
-
-        return when (param) {
+        return when (val param = args.toList()[0]) {
             is List.AndList -> {
                 val nodes = param.nodes.filterIsInstance<ParamResult<*>>().map { it.value }
                 val leftResult = nodes[0]
@@ -125,16 +123,18 @@ class ATerm : ANode.Terminal.Rule<Term>() {
 
 class AFactor : ANode.Terminal.Rule<Factor>() {
     override val pattern: ANode
-        get() = ((ANotOp().asParam() and AFactor()).asParam()
+        get() = (
+                (ANotOp().asParam() and AFactor()).asParam()
                 or (AMinusOp().asParam() and AFactor()).asParam()
-                or ANumber().asParam() or AString().asParam()
-                or ABoolean().asParam() or AIdentifier().asParam()
+                or ANumber().asParam()
+                or AString().asParam()
+                or ABoolean().asParam()
                 or (ARoundBracketOpen().asParam() and AExpr() and ARoundBracketClose().asParam()).asParam()
-                or AFuncCall()) // DONE
+                or AFuncCall()
+                or AIdentifier().asParam()) // DONE
 
     override fun onMatch(location: Location, vararg args: Any): Result<Factor> {
-        val param = args.toList()[0]
-        return when (param) {
+        return when (val param = args.toList()[0]) {
             is List.AndList -> {
                 val nodes = param.nodes.filterIsInstance<ParamResult<*>>().map { it.value }
                 return when (nodes.size) {
@@ -161,7 +161,7 @@ class AFactor : ANode.Terminal.Rule<Factor>() {
             }
 
             is ANode.Terminal.Token<*> -> {
-                val expr: Expr? = when (val token = param.value!!.token) {
+                val expr: Expr = when (val token = param.value!!.token) {
                     is StringLiteralToken -> {
                         Expr.StringLiteral(token, location)
                     }
@@ -177,16 +177,15 @@ class AFactor : ANode.Terminal.Rule<Factor>() {
                     is IdentifierToken -> {
                         Expr.SymbolName(token, param.value!!.location)
                     }
-
                     else -> {
-                        null
+                       return ErrorOnElse(location)
                     }
+
                 }
-                if (expr == null) {
-                    return ErrorOnElse(location)
-                } else {
-                    return Result.success(Factor(expr, location))
-                }
+                return Result.success(Factor(expr, location))
+            }
+            is Expr.FuncCall -> {
+                return Result.success(Factor(param, location))
             }
 
             else -> {
@@ -198,36 +197,29 @@ class AFactor : ANode.Terminal.Rule<Factor>() {
 
 class AArguments : ANode.Terminal.Rule<Arguments>() {
     override val pattern: ANode
-        get() = AArgument() or AEps
+        get() = AArgument().repeatable(REPEAT_CONDITION.ONE_AND_MORE).separatedBy(AComma()) or AEps.asParam()
 
     override fun onMatch(location: Location, vararg args: Any): Result<Arguments> {
-        val params = args.toList()
+        return when(val param = args[0]) {
+            is Argument -> {
+                return Result.success(Arguments(args.toList().map { it as Argument }, location))
+            }
+            AEps -> {
+                return Result.success(Arguments(emptyList(), location))
+            }
+            else -> {
+                return ErrorOnElse(location)
+            }
 
-        if (params.isEmpty()) {
-            return Result.success(Arguments(null, location))
         }
-
-        val argument = params[0] as Argument
-        return Result.success(Arguments(argument, location))
     }
 }
 
 class AArgument : ANode.Terminal.Rule<Argument>() {
     override val pattern: ANode
-        get() = AExpr().repeatable(REPEAT_CONDITION.ONE_AND_MORE).separatedBy(AComma())
-
+        get() = AExpr()
     override fun onMatch(location: Location, vararg args: Any): Result<Argument> {
-        return when (args[0]) {
-            AEps -> {
-                Result.failure(EpsError())
-            }
-
-            else -> {
-                val params = args.toList()
-                val exprs = params.map { (it as Expr) }
-                Result.success(Argument(exprs, location))
-            }
-        }
+        return Result.success(Argument(args[0] as Expr, location))
     }
 }
 
@@ -240,7 +232,7 @@ class AFuncCall : ANode.Terminal.Rule<Expr.FuncCall>() {
         val id = params[0] as ANode.Terminal.Token<IdentifierToken>
         val arguments = params[1] as Arguments
         val symbolName = Expr.SymbolName(id.value!!.token, id.location!!)
-        return Result.success(Expr.FuncCall(symbolName, arguments.arguments?.exprs ?: emptyList(), location))
+        return Result.success(Expr.FuncCall(symbolName, arguments, location))
     }
 }
 
@@ -254,7 +246,7 @@ class AProcCall() : ANode.Terminal.Rule<Stmt.ProcCall>() {
         val arguments = params[1] as Arguments
         val symbolName = Expr.SymbolName(id.value!!.token, id.location!!)
         return Result.success(
-            Stmt.ProcCall(symbolName, arguments.arguments?.exprs ?: emptyList(), location)
+            Stmt.ProcCall(symbolName, arguments, location)
         )
     }
 }
@@ -365,7 +357,7 @@ class AVarDeclaration() : ANode.Terminal.Rule<Stmt.VarDeclaration>() {
 
 class AStatementList : ANode.Terminal.Rule<StmtList>() {
     override val pattern: ANode
-        get() = AStatement().repeatable(REPEAT_CONDITION.ONE_AND_MORE) or AEps
+        get() = AStatement().repeatable(REPEAT_CONDITION.ONE_AND_MORE) or AEps.asParam()
 
     override fun onMatch(location: Location, vararg args: Any): Result<StmtList> {
         val stmts = args.toList().mapNotNull { value ->

@@ -48,7 +48,7 @@ data class HToken(val concreteToken: ConcreteToken<out Token>, val element: High
 
 class HighlighterVisitor(val tokens: List<ConcreteToken<out Token>>, val ast: Program): AstVisitor<Any, MutableList<HToken>> {
     fun generateHighlighing() : List<HToken> {
-        return ast.accept(this, 1)
+        return ast.accept(this, Any())
     }
 
     override fun visit(node: StmtList, context: Any): MutableList<HToken> {
@@ -156,11 +156,7 @@ class HighlighterVisitor(val tokens: List<ConcreteToken<out Token>>, val ast: Pr
     override fun visit(node: Stmt.ProcCall, context: Any): MutableList<HToken> {
         val elements: MutableList<HToken> = mutableListOf()
         elements.addAll(node.symbol.accept(this, context))
-
-        for (arg in node.arguments) {
-            elements.addAll(arg.accept(this, context))
-        }
-
+        elements.addAll(node.arguments.accept(this, context))
         return elements
     }
 
@@ -205,7 +201,7 @@ class HighlighterVisitor(val tokens: List<ConcreteToken<out Token>>, val ast: Pr
     override fun visit(node: Arguments, context: Any): MutableList<HToken> {
         val elements: MutableList<HToken> = mutableListOf()
 
-        node.arguments?.exprs?.forEach {
+        node.arguments.forEach {
             elements.addAll(it.accept(this, context))
         }
 
@@ -213,11 +209,7 @@ class HighlighterVisitor(val tokens: List<ConcreteToken<out Token>>, val ast: Pr
     }
 
     override fun visit(node: Argument, context: Any): MutableList<HToken> {
-        val elements: MutableList<HToken> = mutableListOf()
-        node.exprs.forEach {
-            elements.addAll(it.accept(this, context))
-        }
-        return elements
+        return node.expr.accept(this, context)
     }
 
     override fun visit(node: FunParameters, context: Any): MutableList<HToken> {
@@ -254,10 +246,7 @@ class HighlighterVisitor(val tokens: List<ConcreteToken<out Token>>, val ast: Pr
     override fun visit(node: Expr.FuncCall, context: Any): MutableList<HToken> {
         val elements: MutableList<HToken> = mutableListOf()
         elements.addAll(node.symbolName.accept(this, context))
-
-        node.arguments.forEach {
-            elements.addAll(it.accept(this, context))
-        }
+        elements.addAll(node.arguments.accept(this, context))
         return elements
     }
 

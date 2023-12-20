@@ -341,15 +341,12 @@ private fun calculateHighlighting(file: File, rope: Rope<LineMetrics>?) : Highli
     val highlightingBuilder = HighlightingBuilders.firstOrNull { builder -> builder.language.fileExtension == file.extension } ?: return null
     try {
         val tokens = highlightingBuilder.tokenize(rope.toString())
-        HighlightingLogger.log.info("TOKENS: " + tokens.toString())
         val ast = highlightingBuilder.buildAst(tokens).getOrThrow()
-        HighlightingLogger.log.info("AST: " + ast.toString())
         val htokens = highlightingBuilder.buildHighlighting(ast, tokens)
-        HighlightingLogger.log.info("HTOKENS: " + htokens.toString())
         val newHighlighter = Highlighter(htokens)
         return newHighlighter
     } catch (e: Throwable) {
-        HighlightingLogger.log.info(e.message)
+        HighlightingLogger.log.info("Error on Highlighting $e")
         return null
     }
 }
