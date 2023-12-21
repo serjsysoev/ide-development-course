@@ -67,6 +67,7 @@ fun main() = application {
                                     settings = Settings()
                                 )
                             }
+                            codeViewer.editors.codeViewer = codeViewer
 
                             val fileWatcher = KfsDirectoryWatcher (
                                 scope = codeViewer.lifeTime,
@@ -82,8 +83,7 @@ fun main() = application {
                                     fileWatcher.onEventFlow.filter {
                                         it.event in listOf(KfsEvent.Create, KfsEvent.Delete)
                                     }.collect {
-                                        codeViewer.fileTree.value =
-                                            FileTree(view.workspace.file, view.workspace.editors)
+                                        codeViewer.fileTree.value = FileTree(view.workspace.file, view.workspace.editors)
                                     }
                                 }
                             }

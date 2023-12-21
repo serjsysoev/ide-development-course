@@ -11,7 +11,7 @@ import kotlin.coroutines.EmptyCoroutineContext
 
 class CodeViewer(
     val editors: Editors,
-    val fileTree: MutableState<FileTree>,
+    val fileTree: MutableState<FileTree?>,
     val settings: Settings,
     val lifeTime: CoroutineScope = CoroutineScope(EmptyCoroutineContext),
     val notification: MutableState<Notification?> = mutableStateOf(null)

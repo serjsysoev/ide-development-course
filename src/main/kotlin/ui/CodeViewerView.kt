@@ -82,7 +82,6 @@ fun CodeViewerView(model: CodeViewer) {
 
 @Composable
 fun BoxScope.NotificationView(model: MutableState<Notification?>) {
-    println("Compose notification")
     val notification = remember { model }
 
     val notify = notification.value
@@ -113,7 +112,7 @@ fun BoxScope.NotificationView(model: MutableState<Notification?>) {
                     Text(
                         notify.text,
                         fontFamily = Fonts.jetbrainsMono(),
-                        fontSize = AppTheme.fontSize.medium,
+                        fontSize = AppTheme.fontSize.small,
                         color = AppTheme.colors.font.mainLight,
                         fontWeight = FontWeight.Light
                     )

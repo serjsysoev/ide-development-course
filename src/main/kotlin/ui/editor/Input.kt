@@ -191,13 +191,16 @@ internal fun Modifier.keyboardInput(editorState: EditorState, clipboardManager: 
                     GlobalScope.launch(Dispatchers.Default) {
                         val filename = editorState.file.value.absolutePath
                         val file = File(filename)
-                        val (text, color) = if (file.canWrite()) {
+                        val (text, color) = if (file.exists() && file.canWrite()) {
                             file.writeText(editorState.rope.value.toString())
-                            "File is saved" to AppTheme.colors.state.success
+                            "The file was saved successfully..." to AppTheme.colors.state.success
+                        } else if (!file.exists()) {
+                            file.writeText(editorState.rope.value.toString())
+                            "Warning. File is successfully created..." to AppTheme.colors.state.warning
                         } else {
-                            "Error. File is not writable." to AppTheme.colors.state.fail
+                            "Error. File is not writable..." to AppTheme.colors.state.fail
+
                         }
-                        println("Save")
                         val notify = Notification(text, color)
                         if (codeViewer.notification.value != notify) {
                             codeViewer.notification.value = notify

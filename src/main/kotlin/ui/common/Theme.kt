@@ -3,7 +3,6 @@ package ui.common
 import androidx.compose.material.darkColors
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Circle
-import androidx.compose.material.icons.outlined.CircleNotifications
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
@@ -25,6 +24,7 @@ object AppTheme {
         }
 
         object state {
+            val warning: Color = Color(0xFFFFB534)
             val fail: Color = Color(0xFFBF3131)
             val success: Color = Color(0xFF4E9F3D)
         }
@@ -50,7 +50,6 @@ object AppTheme {
 
     object icons {
         val Delete = Icons.Outlined.Close
-        val Notification = Icons.Outlined.CircleNotifications
         val Circle = Icons.Default.Circle
     }
 

@@ -4,8 +4,6 @@ import util.rope.LineMetrics
 import util.rope.LineMetricsCalculator
 import util.rope.Rope
 
-val HomeFolder: File get() = java.io.File(System.getProperty("user.home")).toProjectFile()
-
 
 interface File {
     val name: String

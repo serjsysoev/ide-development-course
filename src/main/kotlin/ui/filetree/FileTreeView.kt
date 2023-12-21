@@ -25,12 +25,15 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ascript.AScript
+import ui.common.AppTheme
+import ui.common.Fonts
 
 @Composable
 fun FileTreeViewTabView() = Surface {
@@ -48,27 +51,38 @@ fun FileTreeViewTabView() = Surface {
 }
 
 @Composable
-fun FileTreeView(fileTree: MutableState<FileTree>) = Surface(
+fun FileTreeView(model: MutableState<FileTree?>) = Surface(
     modifier = Modifier.fillMaxSize()
 ) {
-    val model = remember { fileTree }
-    with(LocalDensity.current) {
-        Box {
-            val scrollState = rememberLazyListState()
+    val modelFileTree = remember { model }
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().withoutWidthConstraints(),
-                state = scrollState
-            ) {
-                items(model.value.nodes.size) {
-                    FileTreeItemView(14.sp, 14.sp.toDp() * 1.5f, model.value.nodes[it])
+    val fileTree = modelFileTree.value
+    if (fileTree != null) {
+        with(LocalDensity.current) {
+            Box {
+                val scrollState = rememberLazyListState()
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().withoutWidthConstraints(),
+                    state = scrollState
+                ) {
+                    items(fileTree.nodes.size) {
+                        FileTreeItemView(14.sp, 14.sp.toDp() * 1.5f, fileTree.nodes[it])
+                    }
                 }
-            }
 
-            VerticalScrollbar(
-                rememberScrollbarAdapter(scrollState),
-                Modifier.align(Alignment.CenterEnd)
-            )
+                VerticalScrollbar(
+                    rememberScrollbarAdapter(scrollState),
+                    Modifier.align(Alignment.CenterEnd)
+                )
+            }
+        }
+    } else {
+        Row (modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("List of Workspaces is Empty", fontFamily = Fonts.jetbrainsMono(), fontSize = AppTheme.fontSize.medium, fontWeight = FontWeight.Normal, color = AppTheme.colors.font.grayLight)
         }
     }
 }

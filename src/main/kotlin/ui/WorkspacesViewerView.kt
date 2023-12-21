@@ -149,9 +149,11 @@ fun CreateWorkspaceView(workspaces: SnapshotStateList<Workspace>, workspaceViewe
 
         if (path != null) {
             val file = File(path)
-            val workspace = Workspace(file.name, file.toProjectFile())
-            workspaces.add(0, workspace)
-            workspaceViewer.workspaces.add(0, workspace)
+            if (file.exists()) {
+                val workspace = Workspace(file.name, file.toProjectFile())
+                workspaces.add(0, workspace)
+                workspaceViewer.workspaces.add(0, workspace)
+            }
         }
     }
 
