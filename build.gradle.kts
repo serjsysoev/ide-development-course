@@ -15,11 +15,8 @@ repositories {
 }
 
 dependencies {
-    // Note, if you develop a library, you should use compose.desktop.common.
-    // compose.desktop.currentOs should be used in launcher-sourceSet
-    // (in a separate module for demo project and in testMain).
-    // With compose.desktop.common you will also lose @Preview functionality
     implementation(compose.desktop.currentOs)
+    implementation(kotlin("reflect"))
     implementation(compose.materialIconsExtended)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     implementation("com.darkrockstudios:mpfilepicker:3.0.0")

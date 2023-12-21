@@ -4,6 +4,7 @@ import language.ast.ASTNode
 import language.lexer.tokenizer.ConcreteToken
 import language.lexer.tokenizer.Location
 import language.lexer.tokenizer.Token
+import kotlin.reflect.full.isSuperclassOf
 
 
 fun <T : ANode> T.asParam(isParameter: Boolean = true): T {
@@ -256,7 +257,7 @@ class ASTBuilder<T : ASTNode>(private val rule: Rule<T>, private val tokens: Lis
         if (!isEnd()) {
             val concreteToken = peek()
             if (concreteToken != null) {
-                if (expectedToken.tokenType.isInstance(concreteToken.token)) {
+                if (expectedToken.tokenType.isSuperclassOf(concreteToken.token::class)) {
                     curPos += 1
                     return Result.success(
                         ANode.Terminal.Token(
