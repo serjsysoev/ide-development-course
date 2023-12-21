@@ -2,18 +2,20 @@
 
 "Simple IDE for editing text"
 
-<div style="text-align: center;">
 
 ![alt text](files/demo.gif)
 
 Source 1. Demo video
-</div>
+
+# Workspaces Viewer
+
+![alt text](files/workspacesViewer.png)
+
+Source 2. Workspaces Viewer
 
 
+# Editor
 
-<div style="text-align: center;">
+![alt text](files/editor.png)
 
-![alt text](files/Editor.png)
-
-Source 2. CodeView (Workspace)
-</div>
+Source 3. CodeView (Workspace)
